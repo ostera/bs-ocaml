@@ -55,17 +55,24 @@ let print_if ppf flag printer arg =
 
 let (++) x f = f x
 
+let serialize_raw_js = 
+  try ignore @@ Sys.getenv "OCAML_RAW_JS"; true with Not_found -> false
+
+
 let implementation ppf sourcefile outputprefix =
   Compmisc.init_path false;
   let modulename = module_of_filename ppf sourcefile outputprefix in
   Env.set_unit_name modulename;
   let env = Compmisc.initial_env() in
+  let finalenv = ref Env.empty in
+  let current_signature = ref [] in
   try
     let (typedtree, coercion) =
       Pparse.parse_implementation ~tool_name ppf sourcefile
       ++ print_if ppf Clflags.dump_parsetree Printast.implementation
       ++ print_if ppf Clflags.dump_source Pprintast.structure
-      ++ Typemod.type_implementation sourcefile outputprefix modulename env
+      ++ (fun x -> let (a,b,c,signature) = Typemod.type_implementation_more sourcefile outputprefix modulename env x  in
+       begin finalenv:=c; current_signature:= signature; a,b end)
       ++ print_if ppf Clflags.dump_typedtree
         Printtyped.implementation_with_coercion
     in
@@ -77,6 +84,15 @@ let implementation ppf sourcefile outputprefix =
         (typedtree, coercion)
         ++ Translmod.transl_implementation modulename
         ++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
+         (* (Printlambda.env_lambda !finalenv) *)
+        ++ (fun lambda -> 
+            (if serialize_raw_js then 
+               !Printlambda.serialize_raw_js 
+                 !finalenv !current_signature 
+                 sourcefile  lambda 
+            );
+            lambda
+           )
         ++ Simplif.simplify_lambda
         ++ print_if ppf Clflags.dump_lambda Printlambda.lambda
         ++ Bytegen.compile_implementation modulename
