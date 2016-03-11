@@ -146,8 +146,8 @@ let primitives_table = create_hashtable 57 [
   "%identity", Pidentity;
   "%mark_ocaml_object", Pmark_ocaml_object;
   "%ignore", Pignore;
-  "%field0", Pfield 0;
-  "%field1", Pfield 1;
+  "%field0", Pfield (0, Fld_na);
+  "%field1", Pfield (1, Fld_na);
   "%setfield0", Psetfield(0, true);
   "%makeblock", Pmakeblock(0, Lambda.default_tag_info, Immutable);
   "%makemutable", Pmakeblock(0,Lambda.default_tag_info,  Mutable);
@@ -792,8 +792,8 @@ and transl_exp0 e =
   | Texp_field(arg, _, lbl) ->
       let access =
         match lbl.lbl_repres with
-          Record_regular -> Pfield lbl.lbl_pos
-        | Record_float -> Pfloatfield lbl.lbl_pos in
+          Record_regular -> Pfield (lbl.lbl_pos, Fld_record lbl.lbl_name)
+        | Record_float -> Pfloatfield (lbl.lbl_pos, Fld_record lbl.lbl_name) in
       Lprim(access, [transl_exp arg])
   | Texp_setfield(arg, _, lbl, newval) ->
       let access =
@@ -848,7 +848,7 @@ and transl_exp0 e =
       in
       event_after e lam
   | Texp_new (cl, {Location.loc=loc}, _) ->
-      Lapply(Lprim(Pfield 0, [transl_path ~loc e.exp_env cl]),
+      Lapply(Lprim(Pfield (0, Fld_na), [transl_path ~loc e.exp_env cl]),
              [lambda_unit], Lambda.default_apply_info ())
   | Texp_instvar(path_self, path, _) ->
       Lprim(Parrayrefu Paddrarray,
@@ -1095,9 +1095,10 @@ and transl_record all_labels repres lbl_expr_list opt_init_expr =
     | Some init_expr ->
         for i = 0 to Array.length all_labels - 1 do
           let access =
-            match all_labels.(i).lbl_repres with
-              Record_regular -> Pfield i
-            | Record_float -> Pfloatfield i in
+            let lbl = all_labels.(i) in
+            match lbl.lbl_repres with
+              Record_regular -> Pfield (i, Fld_record lbl.lbl_name)
+            | Record_float -> Pfloatfield (i, Fld_record lbl.lbl_name)  in
           lv.(i) <- Lprim(access, [Lvar init_id])
         done
     end;
@@ -1109,17 +1110,18 @@ and transl_record all_labels repres lbl_expr_list opt_init_expr =
       if List.exists (fun (_, lbl, expr) -> lbl.lbl_mut = Mutable) lbl_expr_list
       then Mutable
       else Immutable in
+    let all_labels_info = all_labels |> Array.map (fun x -> x.Types.lbl_name) in
     let lam =
       try
         if mut = Mutable then raise Not_constant;
         let cl = List.map extract_constant ll in
         match repres with
-          Record_regular -> Lconst(Const_block(0, Lambda.Record, cl))
+          Record_regular -> Lconst(Const_block(0, Lambda.Record all_labels_info, cl))
         | Record_float ->
             Lconst(Const_float_array(List.map extract_float cl))
       with Not_constant ->
         match repres with
-          Record_regular -> Lprim(Pmakeblock(0, Lambda.Record, mut), ll)
+          Record_regular -> Lprim(Pmakeblock(0, Lambda.Record all_labels_info, mut), ll)
         | Record_float -> Lprim(Pmakearray Pfloatarray, ll) in
     begin match opt_init_expr with
       None -> lam

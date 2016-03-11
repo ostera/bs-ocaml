@@ -33,10 +33,16 @@ type tag_info =
   | Tuple
   | Array
   | Variant of string 
-  | Record 
+  | Record of string array (* when its empty means we dont get such information *)
+  | Module of string list option
   | NA
 
 let default_tag_info : tag_info = NA
+
+type field_dbg_info = 
+  | Fld_na
+  | Fld_record of string
+  | Fld_module of string 
 
 type primitive =
   | Pidentity
@@ -54,9 +60,9 @@ type primitive =
   | Psetglobal of Ident.t
   (* Operations on heap blocks *)
   | Pmakeblock of int * tag_info * mutable_flag
-  | Pfield of int
+  | Pfield of int * field_dbg_info
   | Psetfield of int * bool
-  | Pfloatfield of int
+  | Pfloatfield of int * field_dbg_info
   | Psetfloatfield of int
   | Pduprecord of Types.record_representation * int
   (* Force lazy values *)
@@ -485,7 +491,7 @@ let rec transl_normal_path = function
     Pident id ->
       if Ident.global id then Lprim(Pgetglobal id, []) else Lvar id
   | Pdot(p, s, pos) ->
-      Lprim(Pfield pos, [transl_normal_path p])
+      Lprim(Pfield (pos, Fld_na (* TODO *)), [transl_normal_path p])
   | Papply(p1, p2) ->
       fatal_error "Lambda.transl_path"
 

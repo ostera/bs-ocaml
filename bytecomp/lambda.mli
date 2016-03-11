@@ -35,10 +35,16 @@ type tag_info =
   | Tuple
   | Array
   | Variant of string 
-  | Record 
+  | Record of string array
+  | Module of string list option
   | NA
 
 val default_tag_info : tag_info
+
+type field_dbg_info = 
+  | Fld_na
+  | Fld_record of string
+  | Fld_module of string 
 
 type pointer_info = 
   | NullConstructor of string
@@ -63,9 +69,9 @@ type primitive =
   | Psetglobal of Ident.t
   (* Operations on heap blocks *)
   | Pmakeblock of int * tag_info * mutable_flag
-  | Pfield of int
-  | Psetfield of int * bool
-  | Pfloatfield of int
+  | Pfield of int * field_dbg_info
+  | Psetfield of int * bool (* could have field info at least for record *)
+  | Pfloatfield of int * field_dbg_info
   | Psetfloatfield of int
   | Pduprecord of Types.record_representation * int
   (* Force lazy values *)

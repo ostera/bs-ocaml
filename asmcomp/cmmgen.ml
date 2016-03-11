@@ -1560,9 +1560,9 @@ and transl_prim_1 p arg dbg =
   | Pignore ->
       return_unit(remove_unit (transl arg))
   (* Heap operations *)
-  | Pfield n ->
+  | Pfield (n,_) ->
       get_field (transl arg) n
-  | Pfloatfield n ->
+  | Pfloatfield (n,_) ->
       let ptr = transl arg in
       box_float(
         Cop(Cload Double_u,
