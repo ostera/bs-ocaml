@@ -110,11 +110,11 @@ let primitive ppf = function
   | Pmakeblock(tag, _, Immutable) -> fprintf ppf "makeblock %i" tag
   | Pmakeblock(tag, _, Mutable) -> fprintf ppf "makemutable %i" tag
   | Pfield (n,_) -> fprintf ppf "field %i" n
-  | Psetfield(n, ptr) ->
+  | Psetfield(n, ptr, _) ->
       let instr = if ptr then "setfield_ptr " else "setfield_imm " in
       fprintf ppf "%s%i" instr n
   | Pfloatfield (n,_) -> fprintf ppf "floatfield %i" n
-  | Psetfloatfield n -> fprintf ppf "setfloatfield %i" n
+  | Psetfloatfield (n,_) -> fprintf ppf "setfloatfield %i" n
   | Pduprecord (rep, size) -> fprintf ppf "duprecord %a %i" record_rep rep size
   | Plazyforce -> fprintf ppf "force"
   | Pccall p -> fprintf ppf "%s" p.prim_name
@@ -372,7 +372,7 @@ let lambda use_env env ppf v  =
   | Lprim(Pfield (n,_), [ Lprim(Pgetglobal id,[])]) when use_env ->
       fprintf ppf "%s.%s/%d" id.name (get_string (id,n) env) n
 
-  | Lprim(Psetfield (n,_), [ Lprim(Pgetglobal id,[]) ;  e ]) when use_env  ->
+  | Lprim(Psetfield (n,_,_), [ Lprim(Pgetglobal id,[]) ;  e ]) when use_env  ->
       fprintf ppf "@[<2>(%s.%s/%d <- %a)@]" id.name (get_string (id,n) env) n
         lam e
   | Lprim(prim, largs) ->

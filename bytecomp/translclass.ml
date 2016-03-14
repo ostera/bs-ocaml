@@ -777,7 +777,7 @@ let transl_class ids cl_id pub_meths cl vflag =
                 [Lvar tables; Lprim(Pmakeblock(0, Lambda.default_tag_info, Immutable), inh_keys)]),
          lam)
   and lset cached i lam =
-    Lprim(Psetfield(i, true), [Lvar cached; lam])
+    Lprim(Psetfield(i, true, Fld_set_na), [Lvar cached; lam])
   in
   let ldirect () =
     ltable cla

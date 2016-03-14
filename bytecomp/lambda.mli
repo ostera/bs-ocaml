@@ -46,6 +46,10 @@ type field_dbg_info =
   | Fld_record of string
   | Fld_module of string 
 
+type set_field_dbg_info = 
+  | Fld_set_na
+  | Fld_record_set of string 
+
 type pointer_info = 
   | NullConstructor of string
   | NullVariant of string 
@@ -70,9 +74,10 @@ type primitive =
   (* Operations on heap blocks *)
   | Pmakeblock of int * tag_info * mutable_flag
   | Pfield of int * field_dbg_info
-  | Psetfield of int * bool (* could have field info at least for record *)
+  | Psetfield of int * bool * set_field_dbg_info
+  (* could have field info at least for record *)
   | Pfloatfield of int * field_dbg_info
-  | Psetfloatfield of int
+  | Psetfloatfield of int * set_field_dbg_info
   | Pduprecord of Types.record_representation * int
   (* Force lazy values *)
   | Plazyforce

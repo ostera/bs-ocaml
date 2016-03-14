@@ -302,9 +302,9 @@ let comp_primitive p args =
   | Pintcomp cmp -> Kintcomp cmp
   | Pmakeblock(tag, _, mut) -> Kmakeblock(List.length args, tag)
   | Pfield (n, _) -> Kgetfield n
-  | Psetfield(n, ptr) -> Ksetfield n
+  | Psetfield(n, ptr, _) -> Ksetfield n
   | Pfloatfield (n,_) -> Kgetfloatfield n
-  | Psetfloatfield n -> Ksetfloatfield n
+  | Psetfloatfield (n,_) -> Ksetfloatfield n
   | Pduprecord _ -> Kccall("caml_obj_dup", 1)
   | Pccall p -> Kccall(p.prim_name, p.prim_arity)
   | Pnegint -> Knegint

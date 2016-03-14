@@ -1660,13 +1660,13 @@ and transl_prim_1 p arg dbg =
 and transl_prim_2 p arg1 arg2 dbg =
   match p with
   (* Heap operations *)
-    Psetfield(n, ptr) ->
+    Psetfield(n, ptr, _) ->
       if ptr then
         return_unit(Cop(Cextcall("caml_modify", typ_void, false,Debuginfo.none),
                         [field_address (transl arg1) n; transl arg2]))
       else
         return_unit(set_field (transl arg1) n (transl arg2))
-  | Psetfloatfield n ->
+  | Psetfloatfield (n,_) ->
       let ptr = transl arg1 in
       return_unit(
         Cop(Cstore Double_u,
