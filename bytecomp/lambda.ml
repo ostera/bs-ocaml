@@ -214,15 +214,15 @@ type meth_kind = Self | Public of public_info | Cached
 type shared_code = (int * int) list
 
 type apply_status = 
-  | NA
-  | Full 
-
+  | App_na
+  | App_ml_full
+  | App_js_full 
 type apply_info = {
     apply_loc : Location.t;
     apply_status : apply_status;
   }
 let default_apply_info ?(loc=Location.none) () = 
-  {apply_loc = loc; apply_status = NA}
+  {apply_loc = loc; apply_status = App_na}
 type lambda =
     Lvar of Ident.t
   | Lconst of structured_constant

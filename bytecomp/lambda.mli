@@ -223,8 +223,9 @@ type meth_kind = Self | Public of public_info | Cached
 type shared_code = (int * int) list     (* stack size -> code label *)
 
 type apply_status = 
-  | NA
-  | Full 
+  | App_na
+  | App_ml_full 
+  | App_js_full
 
 type apply_info = {
     apply_loc : Location.t;
