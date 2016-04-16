@@ -203,7 +203,7 @@ let init_shape modl =
       Mty_ident _ ->
         raise Not_found
     | Mty_alias _ ->
-        Const_block (1, Lambda.default_tag_info, [Const_pointer (0, Lambda.default_pointer_info)])
+        Const_block (1, Lambda.default_tag_info, [Const_pointer (0, Lambda.Pt_module_alias)])
     | Mty_signature sg ->
         Const_block(0,  Lambda.default_tag_info, [Const_block(0, Lambda.default_tag_info, init_shape_struct env sg)])
     | Mty_functor(id, arg, res) ->
@@ -379,7 +379,7 @@ and transl_structure fields cc rootpath = function
         Tcoerce_none ->
           let fields =  List.rev fields in
           let field_names = List.map (fun id -> id.Ident.name) fields in
-          Lprim(Pmakeblock(0, Lambda.Module (Some field_names) , Immutable),
+          Lprim(Pmakeblock(0, Lambda.Blk_module (Some field_names) , Immutable),
                 List.fold_right (fun id acc -> begin
                       (if is_top rootpath then 
                          export_identifiers :=  id :: !export_identifiers);
@@ -408,7 +408,7 @@ and transl_structure fields cc rootpath = function
                  end)
               pos_cc_list ([], [])in 
           let lam =
-            (Lprim(Pmakeblock(0, Module (Some names), Immutable),
+            (Lprim(Pmakeblock(0, Blk_module (Some names), Immutable),
                    result))
           and id_pos_list =
             List.filter (fun (id,_,_) -> not (IdentSet.mem id ids)) id_pos_list

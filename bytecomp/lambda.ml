@@ -29,15 +29,15 @@ type loc_kind =
   | Loc_POS
 
 type tag_info = 
-  | Constructor of string
-  | Tuple
-  | Array
-  | Variant of string 
-  | Record of string array (* when its empty means we dont get such information *)
-  | Module of string list option
-  | NA
+  | Blk_constructor of string * int (* Number of non-const constructors*)
+  | Blk_tuple
+  | Blk_array
+  | Blk_variant of string 
+  | Blk_record of string array (* when its empty means we dont get such information *)
+  | Blk_module of string list option
+  | Blk_na
 
-let default_tag_info : tag_info = NA
+let default_tag_info : tag_info = Blk_na
 
 type field_dbg_info = 
   | Fld_na
@@ -188,11 +188,12 @@ and raise_kind =
   | Raise_notrace
 
 type pointer_info = 
-  | NullConstructor of string
-  | NullVariant of string 
-  | NAPointer 
+  | Pt_constructor of string
+  | Pt_variant of string 
+  | Pt_module_alias
+  | Pt_na
 
-let default_pointer_info = NAPointer
+let default_pointer_info = Pt_na
 
 type structured_constant =
     Const_base of constant
@@ -586,7 +587,7 @@ let lam_of_loc kind loc =
       loc_start.Lexing.pos_cnum + cnum in
   match kind with
   | Loc_POS ->
-    Lconst (Const_block (0, default_tag_info, [
+    Lconst (Const_block (0, Blk_tuple, [
           Const_immstring file;
           Const_base (Const_int lnum);
           Const_base (Const_int cnum);

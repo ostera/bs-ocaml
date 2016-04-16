@@ -31,13 +31,13 @@ type loc_kind =
 
 
 type tag_info = 
-  | Constructor of string
-  | Tuple
-  | Array
-  | Variant of string 
-  | Record of string array
-  | Module of string list option
-  | NA
+  | Blk_constructor of string * int (* Number of non-const constructors*)
+  | Blk_tuple
+  | Blk_array
+  | Blk_variant of string 
+  | Blk_record of string array
+  | Blk_module of string list option
+  | Blk_na
 
 val default_tag_info : tag_info
 
@@ -51,9 +51,10 @@ type set_field_dbg_info =
   | Fld_record_set of string 
 
 type pointer_info = 
-  | NullConstructor of string
-  | NullVariant of string 
-  | NAPointer 
+  | Pt_constructor of string
+  | Pt_variant of string 
+  | Pt_module_alias
+  | Pt_na 
 
 val default_pointer_info : pointer_info
 

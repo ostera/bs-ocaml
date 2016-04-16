@@ -746,7 +746,7 @@ and transl_exp0 e =
                Matching.for_trywith (Lvar id) (transl_cases_try pat_expr_list))
   | Texp_tuple el ->
       let ll = transl_list el in
-      let tag_info = Lambda.Tuple in 
+      let tag_info = Lambda.Blk_tuple in 
       begin try
         Lconst(Const_block(0, tag_info, List.map extract_constant ll))
       with Not_constant ->
@@ -756,9 +756,9 @@ and transl_exp0 e =
       let ll = transl_list args in
       begin match cstr.cstr_tag with
         Cstr_constant n ->
-          Lconst(Const_pointer (n, Lambda.NullConstructor cstr.cstr_name))
+          Lconst(Const_pointer (n, Lambda.Pt_constructor cstr.cstr_name))
       | Cstr_block n ->
-          let tag_info = (Lambda.Constructor cstr.cstr_name) in
+          let tag_info = (Lambda.Blk_constructor (cstr.cstr_name, cstr.cstr_nonconsts)) in
           begin try
             Lconst(Const_block(n,tag_info, List.map extract_constant ll))
           with Not_constant ->
@@ -774,10 +774,10 @@ and transl_exp0 e =
   | Texp_variant(l, arg) ->
       let tag = Btype.hash_variant l in
       begin match arg with
-        None -> Lconst(Const_pointer (tag, Lambda.NullVariant l))
+        None -> Lconst(Const_pointer (tag, Lambda.Pt_variant l))
       | Some arg ->
           let lam = transl_exp arg in
-          let tag_info = Lambda.Variant l in
+          let tag_info = Lambda.Blk_variant l in
           try
             Lconst(Const_block(0, tag_info, [Const_base(Const_int tag);
                                    extract_constant lam]))
@@ -811,7 +811,7 @@ and transl_exp0 e =
         let master =
           match kind with
           | Paddrarray | Pintarray ->
-              Lconst(Const_block(0, Lambda.Array, cl)) (* ATTENTION: ? [|1;2;3;4|]*)
+              Lconst(Const_block(0, Lambda.Blk_array, cl)) (* ATTENTION: ? [|1;2;3;4|]*)
           | Pfloatarray ->
               Lconst(Const_float_array(List.map extract_float cl))
           | Pgenarray ->
@@ -1116,12 +1116,12 @@ and transl_record all_labels repres lbl_expr_list opt_init_expr =
         if mut = Mutable then raise Not_constant;
         let cl = List.map extract_constant ll in
         match repres with
-          Record_regular -> Lconst(Const_block(0, Lambda.Record all_labels_info, cl))
+          Record_regular -> Lconst(Const_block(0, Lambda.Blk_record all_labels_info, cl))
         | Record_float ->
             Lconst(Const_float_array(List.map extract_float cl))
       with Not_constant ->
         match repres with
-          Record_regular -> Lprim(Pmakeblock(0, Lambda.Record all_labels_info, mut), ll)
+          Record_regular -> Lprim(Pmakeblock(0, Lambda.Blk_record all_labels_info, mut), ll)
         | Record_float -> Lprim(Pmakearray Pfloatarray, ll) in
     begin match opt_init_expr with
       None -> lam

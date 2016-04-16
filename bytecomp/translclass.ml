@@ -48,9 +48,9 @@ let lfield v i = Lprim(Pfield (i, Fld_na), [Lvar v])
 let transl_label l = share (Const_immstring l)
 
 let transl_meth_list lst =
-  if lst = [] then Lconst (Const_pointer (0, Lambda.NAPointer)) else
+  if lst = [] then Lconst (Const_pointer (0, Lambda.Pt_na)) else
   share (Const_block
-            (0, Lambda.NA, List.map (fun lab -> Const_immstring lab) lst))
+            (0, Lambda.Blk_na, List.map (fun lab -> Const_immstring lab) lst))
 
 let set_inst_var obj id expr =
   let kind = if Typeopt.maybe_pointer expr then Paddrarray else Pintarray in
@@ -236,7 +236,7 @@ let output_methods tbl methods lam =
       lsequence (mkappl(oo_prim "set_method", [Lvar tbl; lab; code])) lam
   | _ ->
       lsequence (mkappl(oo_prim "set_methods",
-                        [Lvar tbl; Lprim(Pmakeblock(0, Lambda.Array, Immutable), methods)]))
+                        [Lvar tbl; Lprim(Pmakeblock(0, Lambda.Blk_array, Immutable), methods)]))
         lam
 
 let rec ignore_cstrs cl =
@@ -358,7 +358,7 @@ let rec build_class_init cla cstr super inh_init cl_init msubst top cl =
           (inh_init,
            Llet (Strict, inh,
                  mkappl(oo_prim "inherits", narrow_args @
-                        [lpath; Lconst(Const_pointer ((if top then 1 else 0), Lambda.NAPointer))]),
+                        [lpath; Lconst(Const_pointer ((if top then 1 else 0), Lambda.Pt_na))]),
                  Llet(StrictOpt, obj_init, lfield inh 0, cl_init)))
       | _ ->
           let core cl_init =
@@ -503,7 +503,7 @@ let rec builtin_meths self env env2 body =
     | Lprim(Parrayrefu _, [Lvar s; Lvar n]) when List.mem s self ->
         "var", [Lvar n]
     | Lprim(Pfield (n,_), [Lvar e]) when Ident.same e env ->
-        "env", [Lvar env2; Lconst(Const_pointer (n, Lambda.NAPointer))]
+        "env", [Lvar env2; Lconst(Const_pointer (n, Lambda.Pt_na))]
     | Lsend(Self, met, Lvar s, [], _) when List.mem s self ->
         "meth", [met]
     | _ -> raise Not_found
@@ -574,7 +574,7 @@ module M = struct
     | "send_env"   -> SendEnv
     | "send_meth"  -> SendMeth
     | _ -> assert false
-    in Lconst(Const_pointer(Obj.magic tag, Lambda.NAPointer)) :: args
+    in Lconst(Const_pointer(Obj.magic tag, Lambda.Pt_na)) :: args
 end
 open M
 
