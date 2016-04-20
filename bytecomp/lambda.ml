@@ -496,7 +496,7 @@ let rec transl_normal_path = function
     Pident id ->
       if Ident.global id then Lprim(Pgetglobal id, []) else Lvar id
   | Pdot(p, s, pos) ->
-      Lprim(Pfield (pos, Fld_na (* TODO *)), [transl_normal_path p])
+      Lprim(Pfield (pos, Fld_module s ), [transl_normal_path p])
   | Papply(p1, p2) ->
       fatal_error "Lambda.transl_path"
 
