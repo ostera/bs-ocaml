@@ -347,8 +347,20 @@ let save_pers_struct crc ps =
   Consistbl.set crc_units modname crc ps.ps_filename;
   add_import modname
 
-let read_pers_struct modname filename =
-  let cmi = read_cmi filename in
+module Persistent_signature = struct
+  type t =
+    { filename : string;
+      cmi : Cmi_format.cmi_infos }
+
+  let load = ref (fun ~unit_name ->
+    match find_in_path_uncap !load_path (unit_name ^ ".cmi") with
+    | filename -> Some { filename; cmi = read_cmi filename }
+    | exception Not_found -> None)
+end
+
+
+let acknowledge_pers_struct modname
+      { Persistent_signature.filename; cmi } =
   let name = cmi.cmi_name in
   let sign = cmi.cmi_sign in
   let crcs = cmi.cmi_crcs in
@@ -376,6 +388,10 @@ let read_pers_struct modname filename =
     ps.ps_flags;
   Hashtbl.add persistent_structures modname (Some ps);
   ps
+let read_pers_struct modname filename =
+  let cmi = read_cmi filename in
+  acknowledge_pers_struct  modname
+    { Persistent_signature.filename; cmi }
 
 let find_pers_struct ?(check=true) name =
   if name = "*predef*" then raise Not_found;
@@ -392,13 +408,14 @@ let find_pers_struct ?(check=true) name =
           the [find_in_path_uncap] call below fails to find the .cmi,
           to help make builds more deterministic. *)
         add_import name;
-        let filename =
-          try find_in_path_uncap !load_path (name ^ ".cmi")
-          with Not_found ->
+        let ps =
+          match !Persistent_signature.load ~unit_name:name with 
+          | Some ps -> ps
+          | None -> 
             Hashtbl.add persistent_structures name None;
             raise Not_found
         in
-        read_pers_struct name filename
+        acknowledge_pers_struct name ps
   in
   if check then check_consistency ps;
   ps
