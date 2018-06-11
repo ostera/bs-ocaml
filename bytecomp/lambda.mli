@@ -40,14 +40,16 @@ type tag_info =
   | Blk_exception
   | Blk_extension
   | Blk_na
-
+  | Blk_some
+    
 val default_tag_info : tag_info
 
 type field_dbg_info = 
   | Fld_na
   | Fld_record of string
   | Fld_module of string 
-
+  | Fld_val_from_option
+    
 type set_field_dbg_info = 
   | Fld_set_na
   | Fld_record_set of string 
