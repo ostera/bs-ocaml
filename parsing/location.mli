@@ -110,6 +110,11 @@ exception Error of error
 
 val error: ?loc:t -> ?sub:error list -> ?if_highlight:string -> string -> error
 
+#if undefined BS_NO_COMPILER_PATCH then
+val print_error_prefix : Format.formatter -> unit
+val pp_ksprintf : ?before:(formatter -> unit) -> (string -> 'a) -> ('b, formatter, unit, 'a) format4 -> 'b
+#end
+
 val errorf: ?loc:t -> ?sub:error list -> ?if_highlight:string
             -> ('a, Format.formatter, unit, error) format4 -> 'a
 
