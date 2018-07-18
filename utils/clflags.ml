@@ -113,3 +113,28 @@ let runtime_variant = ref "";;      (* -runtime-variant *)
 let keep_docs = ref false              (* -keep-docs *)
 let keep_locs = ref false              (* -keep-locs *)
 let unsafe_string = ref true;;         (* -safe-string / -unsafe-string *)
+
+
+#if undefined  BS_NO_COMPILER_PATCH then 
+type mli_status = Mli_na | Mli_exists | Mli_non_exists
+let no_implicit_current_dir = ref false
+let assume_no_mli = ref Mli_na
+let record_event_when_debug = ref true (* turned off in BuckleScript*)
+let bs_vscode = 
+    try ignore @@ Sys.getenv "BS_VSCODE" ; true with _ -> false
+    (* We get it from environment variable mostly due to 
+       we don't want to rebuild when flip on or off
+    *)
+let dont_record_crc_unit : string option ref = ref None
+let bs_only = ref false
+let no_assert_false = ref false
+#end
+
+type color_setting = Auto | Always | Never
+let parse_color_setting = function
+  | "auto" -> Some Auto
+  | "always" -> Some Always
+  | "never" -> Some Never
+  | _ -> None
+let color = ref Auto ;; (* -color *)
+

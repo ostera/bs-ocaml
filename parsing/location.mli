@@ -53,7 +53,7 @@ val input_lexbuf: Lexing.lexbuf option ref
 val get_pos_info: Lexing.position -> string * int * int (* file, line, char *)
 val print_loc: formatter -> t -> unit
 val print_error: formatter -> t -> unit
-val print_error_cur_file: formatter -> unit
+val print_error_cur_file: formatter -> unit -> unit
 val print_warning: t -> formatter -> Warnings.t -> unit
 val formatter_for_warnings : formatter ref
 val prerr_warning: t -> Warnings.t -> unit
@@ -101,13 +101,19 @@ type error =
 
 exception Error of error
 
+val print_error_prefix: formatter -> unit -> unit
+  (* print the prefix "Error:" possibly with style *)
+
 val error: ?loc:t -> ?sub:error list -> ?if_highlight:string -> string -> error
 
+#if undefined BS_NO_COMPILER_PATCH then 
+val pp_ksprintf : ?before:(formatter -> unit) -> (string -> 'a) -> ('b, formatter, unit, 'a) format4 -> 'b
+#end
 val errorf: ?loc:t -> ?sub:error list -> ?if_highlight:string
-            -> ('a, unit, string, error) format4 -> 'a
+            -> ('a, Format.formatter, unit, error) format4 -> 'a
 
 val raise_errorf: ?loc:t -> ?sub:error list -> ?if_highlight:string
-            -> ('a, unit, string, 'b) format4 -> 'a
+            -> ('a, Format.formatter, unit, 'b) format4 -> 'a
 
 val error_of_printer: t -> (formatter -> 'a -> unit) -> 'a -> error
 

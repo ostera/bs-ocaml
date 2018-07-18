@@ -97,3 +97,20 @@ val keep_docs : bool ref
 val keep_locs : bool ref
 val unsafe_string : bool ref
 val opaque : bool ref
+
+
+#if undefined  BS_NO_COMPILER_PATCH then 
+type mli_status = Mli_na | Mli_exists | Mli_non_exists
+val no_implicit_current_dir : bool ref
+val assume_no_mli : mli_status ref 
+val record_event_when_debug : bool ref 
+val bs_vscode : bool
+val dont_record_crc_unit : string option ref
+val bs_only : bool ref (* set true on bs top*)
+val no_assert_false : bool ref
+#end
+
+type color_setting = Auto | Always | Never
+val parse_color_setting : string -> color_setting option
+val color : color_setting ref
+
