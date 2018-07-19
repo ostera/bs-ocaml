@@ -89,6 +89,13 @@ type t =
   | Unused_module of string                 (* 60 *)
   | Unboxable_type_in_prim_decl of string   (* 61 *)
   | Constraint_on_gadt                      (* 62 *)
+    
+#if undefined BS_NO_COMPILER_PATCH then    
+  | Bs_unused_attribute of string           (* 101 *)
+  | Bs_polymorphic_comparison               (* 102 *)
+  | Bs_ffi_warning of string                (* 103 *)
+  | Bs_derive_warning of string             (* 104 *)
+#end          
 ;;
 
 (* If you remove a warning, leave a hole in the numbering.  NEVER change
@@ -160,17 +167,26 @@ let number = function
   | Unused_module _ -> 60
   | Unboxable_type_in_prim_decl _ -> 61
   | Constraint_on_gadt -> 62
+
+#if undefined BS_NO_COMPILER_PATCH then    
+  | Bs_unused_attribute _ -> 101
+  | Bs_polymorphic_comparison -> 102
+  | Bs_ffi_warning _ -> 103
+  | Bs_derive_warning _ -> 104
+#end    
 ;;
 
-let last_warning_number = 62
+let last_warning_number = 104
 ;;
+
+let letter_all = 
+  let rec loop i = if i = 0 then [] else i :: loop (i - 1) in
+  loop last_warning_number
 
 (* Must be the max number returned by the [number] function. *)
 
 let letter = function
-  | 'a' ->
-     let rec loop i = if i = 0 then [] else i :: loop (i - 1) in
-     loop last_warning_number
+  | 'a' -> letter_all
   | 'b' -> []
   | 'c' -> [1; 2]
   | 'd' -> [3]
@@ -297,7 +313,7 @@ let parse_options errflag s =
   current := {error; active}
 
 (* If you change these, don't forget to change them in man/ocamlc.m *)
-let defaults_w = "+a-4-6-7-9-27-29-32..42-44-45-48-50-60";;
+let defaults_w = "+a-4-6-7-9-27-29-32..42-44-45-48-50-60-102";;
 let defaults_warn_error = "-a+31";;
 
 let () = parse_options false defaults_w;;
@@ -513,6 +529,17 @@ let message = function
          or [@@unboxed]." t t
   | Constraint_on_gadt ->
       "Type constraints do not apply to GADT cases of variant types."
+
+#if undefined BS_NO_COMPILER_PATCH then
+  | Bs_unused_attribute s ->
+      "Unused BuckleScript attribute: " ^ s
+  | Bs_polymorphic_comparison ->
+      "polymorphic comparison introduced (maybe unsafe)"
+  | Bs_ffi_warning s ->
+      "BuckleScript FFI warning: " ^ s
+  | Bs_derive_warning s ->
+      "BuckleScript bs.deriving warning: " ^ s     
+#end
 ;;
 
 let sub_locs = function
@@ -542,6 +569,17 @@ let report w =
              }
 ;;
 
+#if undefined BS_NO_COMPILER_PATCH then
+let super_report message w =
+  match is_active w with
+  | false -> `Inactive
+  | true ->
+     if is_error w then incr nerrors;
+     `Active { number = number w; message = message w; is_error = is_error w;
+               sub_locs = sub_locs w;
+             }
+;;    
+#end
 exception Errors;;
 
 let reset_fatal () =
@@ -628,7 +666,14 @@ let descriptions =
    59, "Assignment to non-mutable value";
    60, "Unused module declaration";
    61, "Unboxable type in primitive declaration";
-   62, "Type constraint on GADT type declaration"
+   62, "Type constraint on GADT type declaration";
+    
+#if undefined BS_NO_COMPILER_PATCH then    
+   101, "Unused bs attributes";
+   102, "polymorphic comparison introduced (maybe unsafe)";
+   103, "BuckleScript FFI warning: " ;
+   104, "BuckleScript bs.deriving warning: "
+#end   
   ]
 ;;
 
