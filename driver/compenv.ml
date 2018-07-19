@@ -78,9 +78,16 @@ let is_unit_name name =
 ;;
 
 let check_unit_name ppf filename name =
+#if undefined BS_NO_COMPILER_PATCH then
+    let _ = ppf in
+    let _ = filename in
+    let _ = name in 
+    ()
+#else     
   if not (is_unit_name name) then
     Location.print_warning (Location.in_file filename) ppf
       (Warnings.Bad_module_name name);;
+#end
 
 (* Compute name of module from output file name *)
 let module_of_filename ppf inputfile outputprefix =
