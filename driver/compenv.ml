@@ -74,10 +74,13 @@ let is_unit_name name =
 ;;
 
 let check_unit_name ppf filename name =
+#if undefined BS_NO_COMPILER_PATCH then  
+  ()
+#else   
   if not (is_unit_name name) then
     Location.print_warning (Location.in_file filename) ppf
       (Warnings.Bad_module_name name);;
-
+#end
 (* Compute name of module from output file name *)
 let module_of_filename ppf inputfile outputprefix =
   let basename = Filename.basename outputprefix in
@@ -211,6 +214,17 @@ let read_OCAMLPARAM ppf position =
             (Warnings.Bad_env_variable ("OCAMLPARAM",
                                         "non-integer parameter for \"inline\""))
         end
+
+      (* color output *)
+      | "color" ->
+          begin match parse_color_setting v with
+          | None ->
+            Location.print_warning Location.none ppf
+              (Warnings.Bad_env_variable ("OCAMLPARAM",
+               "bad value for \"color\", \
+                (expected \"auto\", \"always\" or \"never\")"))
+          | Some setting -> color := setting
+          end
 
       | "intf-suffix" -> Config.interface_suffix := v
 
