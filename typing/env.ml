@@ -1343,8 +1343,8 @@ and check_value_name name loc =
   (* Note: we could also check here general validity of the
      identifier, to protect against bad identifiers forged by -pp or
      -ppx preprocessors. *)
-
-  if String.length name > 0 && (name.[0] = '#') then
+  if !Clflags.bs_only && name = "|." then raise (Error(Illegal_value_name(loc, name)))  
+  else if String.length name > 0 && (name.[0] = '#') then
     for i = 1 to String.length name - 1 do
       if name.[i] = '#' then
         raise (Error(Illegal_value_name(loc, name)))
@@ -1665,7 +1665,18 @@ let crc_of_unit name =
 (* Return the list of imported interfaces with their CRCs *)
 
 let imports() =
+#if undefined BS_NO_COMPILER_PATCH then   
+  let dont_record_crc_unit = !Clflags.dont_record_crc_unit in 
+  match dont_record_crc_unit with 
+  | None -> Consistbl.extract (StringSet.elements !imported_units) crc_units
+  | Some x -> 
+    Consistbl.extract 
+      (StringSet.fold 
+      (fun m acc -> if m = x then acc else m::acc) 
+      !imported_units []) crc_units
+#else 
   Consistbl.extract (StringSet.elements !imported_units) crc_units
+#end  
 
 (* Save a signature to a file *)
 
