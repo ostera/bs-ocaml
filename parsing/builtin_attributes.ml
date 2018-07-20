@@ -60,7 +60,13 @@ let rec error_of_extension ext =
       Location.errorf ~loc "Uninterpreted extension '%s'." txt
 
 let cat s1 s2 =
-  if s2 = "" then s1 else s1 ^ "\n" ^ s2
+  if s2 = "" then s1 else
+#if undefined BS_NO_COMPILER_PATCH then 
+    if Clflags.bs_vscode then s1 ^ " " ^ s2
+    else s1 ^ "\n" ^ s2 
+#else    
+    s1 ^ "\n" ^ s2
+#end    
 
 let rec deprecated_of_attrs = function
   | [] -> None
