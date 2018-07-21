@@ -19,11 +19,13 @@ let cautious f ppf arg =
   try f ppf arg with
     Ellipsis -> fprintf ppf "..."
 
+let out_ident = ref pp_print_string
+
 let rec print_ident ppf =
   function
-    Oide_ident s -> pp_print_string ppf s
+    Oide_ident s -> !out_ident ppf s
   | Oide_dot (id, s) ->
-      print_ident ppf id; pp_print_char ppf '.'; pp_print_string ppf s
+      print_ident ppf id; pp_print_char ppf '.'; !out_ident ppf s
   | Oide_apply (id1, id2) ->
       fprintf ppf "%a(%a)" print_ident id1 print_ident id2
 
@@ -189,6 +191,71 @@ and print_simple_out_type ppf =
     Otyp_class (ng, id, tyl) ->
       fprintf ppf "@[%a%s#%a@]" print_typargs tyl (if ng then "_" else "")
         print_ident id
+#if undefined BS_NO_COMPILER_PATCH then         
+  | Otyp_constr ( (Oide_dot (((Oide_dot (Oide_ident "Js", "Internal"))| (Oide_ident "Js_internal")),
+                             ("fn" | "meth" as name )) as id) ,
+                 ([Otyp_variant(_,Ovar_fields [ variant, _, tys], _,_); result] as tyl))
+    ->
+      (* Otyp_arrow*)
+      let make tys result =
+        if tys = [] then
+          Otyp_arrow ("", Otyp_constr (Oide_ident "unit", []),result)
+        else
+            match tys with
+          | [ Otyp_tuple tys as single] -> 
+              if variant = "Arity_1" then
+                Otyp_arrow ("", single, result)
+              else 
+                List.fold_right (fun x acc  -> Otyp_arrow("",x,acc) ) tys result
+          | [single] ->
+              Otyp_arrow ("", single, result)
+          | _ -> 
+              raise_notrace Not_found
+      in
+      begin match (make tys result) with
+      | exception _ ->
+          begin 
+            pp_open_box ppf 0;
+            print_typargs ppf tyl;
+            print_ident ppf id;
+            pp_close_box ppf ()
+          end
+      | res ->
+          begin match name  with
+          | "fn" -> 
+              fprintf ppf "@[<0>(%a@ [@bs])@]" print_out_type_1 res
+          | "meth" ->
+              fprintf ppf "@[<0>(%a@ [@bs.meth])@]" print_out_type_1 res
+          | _ -> assert false 
+          end
+      end
+  | Otyp_constr ((Oide_dot ((Oide_dot (Oide_ident "Js", "Internal") | (Oide_ident "Js_internal")), "meth_callback" ) as id) ,
+                 ([Otyp_variant(_,Ovar_fields [ variant, _, tys], _,_); result] as tyl))
+    ->
+      let make tys result =
+          match tys with
+          | [ Otyp_tuple tys as single ] -> 
+              if variant = "Arity_1" then Otyp_arrow ("", single, result)
+              else 
+                List.fold_right (fun x acc  -> Otyp_arrow("",x,acc) ) tys result
+          | [single] ->
+              Otyp_arrow ("", single, result)
+          | _ -> 
+              raise_notrace Not_found
+      in
+      begin match (make tys result) with
+      | exception _ ->
+          begin 
+            pp_open_box ppf 0;
+            print_typargs ppf tyl;
+            print_ident ppf id;
+            pp_close_box ppf ()
+          end
+      | res ->
+          fprintf ppf "@[<0>(%a@ [@bs.this])@]" print_out_type_1 res
+
+      end
+#end      
   | Otyp_constr (id, tyl) ->
       pp_open_box ppf 0;
       print_typargs ppf tyl;
@@ -431,7 +498,19 @@ and print_out_sig_item ppf =
           [] -> ()
         | s :: sl ->
             fprintf ppf "@ = \"%s\"" s;
-            List.iter (fun s -> fprintf ppf "@ \"%s\"" s) sl
+            List.iter (fun s ->
+(* TODO: in general, we should print bs attributes, some attributes like
+  bs.splice does need it *)
+#if undefined BS_NO_COMPILER_PATCH then
+    let len = String.length s in
+    if len >= 3 && s.[0] = 'B' && s.[1] = 'S' && s.[2] = ':' then
+      fprintf ppf "@ \"BS-EXTERNAL\"" 
+    else
+      fprintf ppf "@ \"%s\"" s
+#else    
+      fprintf ppf "@ \"%s\"" s
+#end                  
+              ) sl
       in
       fprintf ppf "@[<2>%s %a :@ %a%a@]" kwd value_ident name !out_type
         ty pr_prims prims
