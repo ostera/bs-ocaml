@@ -1325,11 +1325,16 @@ let transl_value_decl env loc valdecl =
   | decl ->
       let arity = Ctype.arity ty in
       let prim = Primitive.parse_declaration arity decl in
-      if arity = 0 && prim.prim_name.[0] <> '%' then
+      let prim_native_name = prim.prim_native_name in 
+      if arity = 0 && not ( String.length prim_native_name > 3 &&
+                            String.unsafe_get prim_native_name 0 = 'B' &&
+                            String.unsafe_get prim_native_name 1 = 'S' &&
+                            String.unsafe_get prim_native_name 2 = ':'
+                          ) && (String.length prim.prim_name = 0 || (prim.prim_name.[0] <> '%' && prim.prim_name.[0] <> '#')) then
         raise(Error(valdecl.pval_type.ptyp_loc, Null_arity_external));
       if !Clflags.native_code
       && prim.prim_arity > 5
-      && prim.prim_native_name = ""
+      && prim_native_name = ""
       then raise(Error(valdecl.pval_type.ptyp_loc, Missing_native_external));
       { val_type = ty; val_kind = Val_prim prim; Types.val_loc = loc;
         val_attributes = valdecl.pval_attributes }
