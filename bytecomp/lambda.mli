@@ -183,10 +183,12 @@ type let_kind = Strict | Alias | StrictOpt | Variable
     StrictOpt: e does not have side-effects, but depend on the store;
       we can discard e if x does not appear in e'
     Variable: the variable x is assigned later in e' *)
+type public_info = string option  (* label name *)
 
-type meth_kind = Self | Public | Cached
+type meth_kind = Self | Public of public_info | Cached
 
 type shared_code = (int * int) list     (* stack size -> code label *)
+
 
 type lambda =
     Lvar of Ident.t
