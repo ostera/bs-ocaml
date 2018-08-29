@@ -54,17 +54,17 @@ let transl_meth_list lst =
 
 let set_inst_var obj id expr =
   let kind = if Typeopt.maybe_pointer expr then Paddrarray else Pintarray in
-  Lprim(Parraysetu kind, [Lvar obj; Lvar id; transl_exp expr])
+  Lprim(Parraysetu kind, [Lvar obj; Lvar id; transl_exp expr],Location.none)
 
 let copy_inst_var obj id expr templ offset =
   let kind = if Typeopt.maybe_pointer expr then Paddrarray else Pintarray in
   let id' = Ident.create (Ident.name id) in
-  Llet(Strict, id', Lprim (Pidentity, [Lvar id]),
+  Llet(Strict, id', Lprim (Pidentity, [Lvar id], Location.none),
   Lprim(Parraysetu kind,
         [Lvar obj; Lvar id';
          Lprim(Parrayrefu kind, [Lvar templ; Lprim(Paddint,
                                                    [Lvar id';
-                                                    Lvar offset])])]))
+                                                    Lvar offset], Location.none)], Location.none)], Location.none))
 
 let transl_val tbl create name =
   mkappl (oo_prim (if create then "new_variable" else "get_variable"),
@@ -474,7 +474,7 @@ let transl_class_rebind ids cl vf =
                      (mkappl(Lvar new_init,
                              [mkappl(Lvar env_init, [Lvar envs])]))));
            lfield cla 2;
-           lfield cla 3])))
+           lfield cla 3], Location.none)))
   with Exit ->
     lambda_unit
 
@@ -483,8 +483,8 @@ let transl_class_rebind ids cl vf =
 let rec module_path = function
     Lvar id ->
       let s = Ident.name id in s <> "" && s.[0] >= 'A' && s.[0] <= 'Z'
-  | Lprim(Pfield _, [p])    -> module_path p
-  | Lprim(Pgetglobal _, []) -> true
+  | Lprim(Pfield _, [p], _)    -> module_path p
+  | Lprim(Pgetglobal _, [], _) -> true
   | _                       -> false
 
 let const_path local = function
@@ -500,7 +500,7 @@ let rec builtin_meths self env env2 body =
   let conv = function
     (* Lvar s when List.mem s self ->  "_self", [] *)
     | p when const_path p -> "const", [p]
-    | Lprim(Parrayrefu _, [Lvar s; Lvar n]) when List.mem s self ->
+    | Lprim(Parrayrefu _, [Lvar s; Lvar n], _) when List.mem s self ->
         "var", [Lvar n]
     | Lprim(Pfield n, [Lvar e]) when Ident.same e env ->
         "env", [Lvar env2; Lconst(Const_pointer n)]
@@ -524,7 +524,7 @@ let rec builtin_meths self env env2 body =
       ("meth_app_"^s, Lvar n :: args)
   | Lsend(Self, met, Lvar s, [], _) when List.mem s self ->
       ("get_meth", [met])
-  | Lsend(Public, met, arg, [], _) ->
+  | Lsend(Public _, met, arg, [], _) ->
       let s, args = conv arg in
       ("send_"^s, met :: args)
   | Lsend(Cached, met, arg, [_;_], _) ->
@@ -532,7 +532,7 @@ let rec builtin_meths self env env2 body =
       ("send_"^s, met :: args)
   | Lfunction (Curried, [x], body) ->
       let rec enter self = function
-        | Lprim(Parraysetu _, [Lvar s; Lvar n; Lvar x'])
+        | Lprim(Parraysetu _, [Lvar s; Lvar n; Lvar x'], _)
           when Ident.same x x' && List.mem s self ->
             ("set_var", [Lvar n])
         | Llet(_, s', Lvar s, body) when List.mem s self ->
@@ -653,7 +653,7 @@ let transl_class ids cl_id pub_meths cl vflag =
              (if not (IdentSet.mem env (free_variables body')) then body' else
               Llet(Alias, env,
                    Lprim(Parrayrefu Paddrarray,
-                         [Lvar self; Lvar env2]), body'))]
+                         [Lvar self; Lvar env2], Location.none), body'))]
         end
       | _ -> assert false
   in
@@ -662,7 +662,7 @@ let transl_class ids cl_id pub_meths cl vflag =
   let copy_env envs self =
     if top then lambda_unit else
     Lifused(env2, Lprim(Parraysetu Paddrarray,
-                        [Lvar self; Lvar env2; Lvar env1']))
+                        [Lvar self; Lvar env2; Lvar env1'], Location.none))
   and subst_env envs l lam =
     if top then lam else
     (* must be called only once! *)
@@ -805,8 +805,8 @@ let transl_class ids cl_id pub_meths cl vflag =
            lfield cached 1;
            lfield cached 0;
            lenvs]
-        else [lambda_unit; lfield cached 0; lambda_unit; lenvs]
-       )))))
+        else [lambda_unit; lfield cached 0; lambda_unit; lenvs])
+       , Location.none)))))
 
 (* Wrapper for class compilation *)
 (*

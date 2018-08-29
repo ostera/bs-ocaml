@@ -213,9 +213,9 @@ let rec transl_const = function
   | Const_base(Const_int32 i) -> Obj.repr i
   | Const_base(Const_int64 i) -> Obj.repr i
   | Const_base(Const_nativeint i) -> Obj.repr i
-  | Const_pointer i -> Obj.repr i
+  | Const_pointer (i,_) -> Obj.repr i
   | Const_immstring s -> Obj.repr s
-  | Const_block(tag, fields) ->
+  | Const_block(tag, _, fields) ->
       let block = Obj.new_block tag (List.length fields) in
       let pos = ref 0 in
       List.iter

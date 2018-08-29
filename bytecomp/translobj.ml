@@ -31,7 +31,7 @@ let consts : (structured_constant, Ident.t) Hashtbl.t = Hashtbl.create 17
 
 let share c =
   match c with
-    Const_block (n, l) when l <> [] ->
+    Const_block (n, _,  l) when l <> [] ->
       begin try
         Lvar (Hashtbl.find consts c)
       with Not_found ->
@@ -56,9 +56,9 @@ let next_cache tag =
   (tag, [!method_cache; Lconst(Const_base(Const_int n))])
 
 let rec is_path = function
-    Lvar _ | Lprim (Pgetglobal _, []) | Lconst _ -> true
-  | Lprim (Pfield _, [lam]) -> is_path lam
-  | Lprim ((Parrayrefu _ | Parrayrefs _), [lam1; lam2]) ->
+    Lvar _ | Lprim (Pgetglobal _, [], _) | Lconst _ -> true
+  | Lprim (Pfield _, [lam], _) -> is_path lam
+  | Lprim ((Parrayrefu _ | Parrayrefs _), [lam1; lam2], _) ->
       is_path lam1 && is_path lam2
   | _ -> false
 
@@ -91,7 +91,7 @@ let int n = Lconst (Const_base (Const_int n))
 
 let prim_makearray =
   { prim_name = "caml_make_vect"; prim_arity = 2; prim_alloc = true;
-    prim_native_name = ""; prim_native_float = false }
+    prim_native_name = ""; prim_native_float = false}
 
 (* Also use it for required globals *)
 let transl_label_init expr =
@@ -102,7 +102,7 @@ let transl_label_init expr =
   in
   let expr =
     List.fold_right
-      (fun id expr -> Lsequence(Lprim(Pgetglobal id, []), expr))
+      (fun id expr -> Lsequence(Lprim(Pgetglobal id, [], Location.none), expr))
       (Env.get_required_globals ()) expr
   in
   Env.reset_required_globals ();
