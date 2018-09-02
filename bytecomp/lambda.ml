@@ -28,6 +28,21 @@ type loc_kind =
   | Loc_LOC
   | Loc_POS
 
+type tag_info = 
+  | Blk_constructor of string * int (* Number of non-const constructors*)
+  | Blk_tuple
+  | Blk_array
+  | Blk_variant of string 
+  | Blk_record of string array (* when its empty means we dont get such information *)
+  | Blk_module of string list option
+  | Blk_extension_slot
+  | Blk_na
+  | Blk_some
+  | Blk_some_not_nested
+    
+let default_tag_info : tag_info = Blk_na
+
+let ref_tag_info : tag_info = Blk_record [| "contents" |]
 type primitive =
   | Pidentity
   | Pbytes_to_string
@@ -176,8 +191,8 @@ let default_pointer_info = Pt_na
 
 type structured_constant =
     Const_base of constant
-  | Const_block of int * structured_constant list
   | Const_pointer of int * pointer_info
+  | Const_block of int * tag_info * structured_constant list
   | Const_float_array of string list
   | Const_immstring of string
 
@@ -556,7 +571,7 @@ let lam_of_loc kind loc =
       loc_start.Lexing.pos_cnum + cnum in
   match kind with
   | Loc_POS ->
-    Lconst (Const_block (0, [
+    Lconst (Const_block (0, Blk_tuple, [
           Const_immstring file;
           Const_base (Const_int lnum);
           Const_base (Const_int cnum);

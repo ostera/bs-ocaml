@@ -2973,11 +2973,16 @@ let partial_function loc () =
   (* [Location.get_pos_info] is too expensive *)
   let (fname, line, char) = Location.get_pos_info loc.Location.loc_start in
   Lprim(Praise Raise_regular, [Lprim(Pmakeblock(0, Immutable),
+#if undefined BS_NO_COMPILER_PATCH then     
+  let fname = 
+    if  not !Location.absname then Filename.basename fname else fname 
+  in   
+#end  
           [transl_normal_path Predef.path_match_failure;
-           Lconst(Const_block(0,
+           Lconst(Const_block(0, Lambda.Blk_tuple,
               [Const_base(Const_string (fname, None));
                Const_base(Const_int line);
-               Const_base(Const_int char)]))])])
+               Const_base(Const_int char)]))], loc)], loc)
 
 let for_function loc repr param pat_act_list partial =
   compile_matching loc repr (partial_function loc) param pat_act_list partial
