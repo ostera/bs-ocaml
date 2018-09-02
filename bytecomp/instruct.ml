@@ -13,7 +13,7 @@
 (*                                                                        *)
 (**************************************************************************)
 
-open Lambda
+
 
 type compilation_env =
   { ce_stack: int Ident.tbl;
@@ -67,7 +67,7 @@ type instruction =
   | Koffsetclosure of int
   | Kgetglobal of Ident.t
   | Ksetglobal of Ident.t
-  | Kconst of structured_constant
+  | Kconst of Lambda.structured_constant
   | Kmakeblock of int * int             (* size, tag *)
   | Kmakefloatblock of int
   | Kgetfield of int
@@ -88,12 +88,12 @@ type instruction =
   | Kboolnot
   | Kpushtrap of label
   | Kpoptrap
-  | Kraise of raise_kind
+  | Kraise of Lambda.raise_kind
   | Kcheck_signals
   | Kccall of string * int
   | Knegint | Kaddint | Ksubint | Kmulint | Kdivint | Kmodint
   | Kandint | Korint | Kxorint | Klslint | Klsrint | Kasrint
-  | Kintcomp of comparison
+  | Kintcomp of Lambda.comparison
   | Koffsetint of int
   | Koffsetref of int
   | Kisint
