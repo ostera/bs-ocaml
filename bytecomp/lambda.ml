@@ -164,10 +164,20 @@ and raise_kind =
   | Raise_reraise
   | Raise_notrace
 
+type pointer_info = 
+  | Pt_constructor of string
+  | Pt_variant of string 
+  | Pt_module_alias
+  | Pt_builtin_boolean
+  | Pt_shape_none
+  | Pt_na
+
+let default_pointer_info = Pt_na
+
 type structured_constant =
     Const_base of constant
-  | Const_pointer of int
   | Const_block of int * structured_constant list
+  | Const_pointer of int * pointer_info
   | Const_float_array of string list
   | Const_immstring of string
 
@@ -223,8 +233,8 @@ and lambda_event_kind =
   | Lev_after of Types.type_expr
   | Lev_function
 
-let const_unit = Const_pointer 0
-
+let const_unit = Const_pointer (0, default_pointer_info)
+let lambda_assert_false = Lconst (Const_pointer(0, Pt_constructor "assert false"))
 let lambda_unit = Lconst const_unit
 
 (* Build sharing keys *)

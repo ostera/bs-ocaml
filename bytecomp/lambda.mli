@@ -28,6 +28,16 @@ type loc_kind =
   | Loc_LOC
   | Loc_POS
 
+type pointer_info = 
+  | Pt_constructor of string
+  | Pt_variant of string 
+  | Pt_module_alias
+  | Pt_builtin_boolean
+  | Pt_shape_none    
+  | Pt_na 
+
+val default_pointer_info : pointer_info
+
 type primitive =
   | Pidentity
   | Pbytes_to_string
@@ -166,8 +176,8 @@ and raise_kind =
 
 type structured_constant =
     Const_base of constant
-  | Const_pointer of int
   | Const_block of int * structured_constant list
+  | Const_pointer of int * pointer_info
   | Const_float_array of string list
   | Const_immstring of string
 
@@ -235,6 +245,7 @@ and lambda_event_kind =
 val make_key: lambda -> lambda option
 
 val const_unit: structured_constant
+val lambda_assert_false: lambda
 val lambda_unit: lambda
 val name_lambda: let_kind -> lambda -> (Ident.t -> lambda) -> lambda
 val name_lambda_list: lambda list -> (lambda list -> lambda) -> lambda

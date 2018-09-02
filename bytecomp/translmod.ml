@@ -210,9 +210,9 @@ let init_shape modl =
         let init_v =
           match Ctype.expand_head env vdesc.val_type with
             {desc = Tarrow(_,_,_,_)} ->
-              Const_pointer 0 (* camlinternalMod.Function *)
+              Const_pointer (0,Lambda.default_pointer_info) (* camlinternalMod.Function *)
           | {desc = Tconstr(p, _, _)} when Path.same p Predef.path_lazy_t ->
-              Const_pointer 1 (* camlinternalMod.Lazy *)
+              Const_pointer (1, Lambda.default_pointer_info) (* camlinternalMod.Lazy *)
           | _ -> raise Not_found in
         init_v :: init_shape_struct env rem
     | Sig_type(id, tdecl, _) :: rem ->
@@ -225,7 +225,7 @@ let init_shape modl =
     | Sig_modtype(id, minfo) :: rem ->
         init_shape_struct (Env.add_modtype id minfo env) rem
     | Sig_class(id, cdecl, _) :: rem ->
-        Const_pointer 2 (* camlinternalMod.Class *)
+        Const_pointer (2, Lambda.default_pointer_info) (* camlinternalMod.Class *)
         :: init_shape_struct env rem
     | Sig_class_type(id, ctyp, _) :: rem ->
         init_shape_struct env rem

@@ -738,11 +738,17 @@ and transl_exp0 e =
       with Not_constant ->
         Lprim(Pmakeblock(0, Immutable), ll)
       end
-  | Texp_construct(_, cstr, args) ->
+  | Texp_construct(lid, cstr, args) ->
       let ll = transl_list args in
       begin match cstr.cstr_tag with
         Cstr_constant n ->
-          Lconst(Const_pointer n)
+          Lconst(Const_pointer (n,
+            match lid.txt with
+            | Lident ("false"|"true") -> Pt_builtin_boolean
+            | Lident "None" when Datarepr.constructor_has_optional_shape cstr
+              -> Pt_shape_none
+            | _ -> (Lambda.Pt_constructor cstr.cstr_name)
+            ))
       | Cstr_block n ->
           begin try
             Lconst(Const_block(n, List.map extract_constant ll))
@@ -759,7 +765,7 @@ and transl_exp0 e =
   | Texp_variant(l, arg) ->
       let tag = Btype.hash_variant l in
       begin match arg with
-        None -> Lconst(Const_pointer tag)
+        None -> Lconst(Const_pointer (tag, Lambda.Pt_variant l))
       | Some arg ->
           let lam = transl_exp arg in
           try
