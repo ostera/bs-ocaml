@@ -37,6 +37,11 @@ exception Error of Location.t * error
    currently compiled module expression).  Useful for naming extensions. *)
 
 let global_path glob = Some(Pident glob)
+let is_top rootpath = 
+  match rootpath with 
+  | Some (Pident _ ) -> true
+  | _ -> false 
+
 let functor_path path param =
   match path with
     None -> None
@@ -144,8 +149,8 @@ let rec compose_coercions c1 c2 =
       in
       Tcoerce_structure
         (List.map
-          (function (p1, Tcoerce_primitive p) ->
-                      (p1, Tcoerce_primitive p)
+          (function (_p1, Tcoerce_primitive _) as x ->
+                      x (* (p1, Tcoerce_primitive p) *)
                   | (p1, c1) ->
                       let (p2, c2) = v2.(p1) in (p2, compose_coercions c1 c2))
              pc1,
@@ -390,6 +395,10 @@ let merge_functors mexp coercion root_path =
   in
   merge mexp coercion root_path [] Default_inline
 
+let export_identifiers  : Ident.t list ref = ref []
+let get_export_identifiers () = 
+  !export_identifiers
+
 let rec compile_functor mexp coercion root_path loc =
   let functor_params_rev, body, body_path, res_coercion, inline_attribute =
     merge_functors mexp coercion root_path
@@ -464,7 +473,10 @@ and transl_structure loc fields cc rootpath final_env = function
             let fields = List.rev fields in 
             let field_names = List.map (fun id -> id.Ident.name) fields in 
             Lprim(Pmakeblock(0, Lambda.Blk_module (Some field_names), Immutable, None),
-                  List.map (fun id -> Lvar id) fields, loc),
+                (List.fold_right (fun id acc -> begin
+                      (if is_top rootpath then 
+                         export_identifiers :=  id :: !export_identifiers);
+                      (Lvar id :: acc) end) fields [])  , loc),
               List.length fields
         | Tcoerce_structure(pos_cc_list, id_pos_list) ->
                 (* Do not ignore id_pos_list ! *)
@@ -475,16 +487,22 @@ and transl_structure loc fields cc rootpath final_env = function
             let v = Array.of_list (List.rev fields) in
             let get_field pos = Lvar v.(pos)
             and ids = List.fold_right IdentSet.add fields IdentSet.empty in
+            let (result, names) = List.fold_right
+              (fun  (pos, cc) (code, name) ->
+                 begin match cc with
+                 | Tcoerce_primitive p -> 
+                     (if is_top rootpath then 
+                        export_identifiers := p.pc_id:: !export_identifiers);
+                     (transl_primitive p.pc_loc p.pc_desc p.pc_env p.pc_type None :: code, p.pc_desc.prim_name ::name)
+                 | _ -> 
+                     (if is_top rootpath then 
+                        export_identifiers :=  v.(pos) :: !export_identifiers);
+                     (apply_coercion loc Strict cc (get_field pos) :: code, v.(pos).Ident.name :: name)
+                 end)
+              pos_cc_list ([], [])in             
             let lam =
-              Lprim(Pmakeblock(0, Lambda.default_tag_info, Immutable, None), (*FIXME: Blk_module*)
-                  List.map
-                    (fun (pos, cc) ->
-                      match cc with
-                        Tcoerce_primitive p ->
-                          transl_primitive p.pc_loc
-                            p.pc_desc p.pc_env p.pc_type None
-                      | _ -> apply_coercion loc Strict cc (get_field pos))
-                    pos_cc_list, loc)
+              Lprim(Pmakeblock(0, Blk_module (Some names), Immutable, None), 
+                   result, loc)
             and id_pos_list =
               List.filter (fun (id,_,_) -> not (IdentSet.mem id ids))
                 id_pos_list
@@ -1337,6 +1355,7 @@ let () =
     )
 
 let reset () =
+  export_identifiers := [];
   primitive_declarations := [];
   transl_store_subst := Ident.empty;
   toploop_ident.Ident.flags <- 0;
