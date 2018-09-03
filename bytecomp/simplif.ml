@@ -35,9 +35,9 @@ let rec eliminate_ref id = function
   | Lletrec(idel, e2) ->
       Lletrec(List.map (fun (v, e) -> (v, eliminate_ref id e)) idel,
               eliminate_ref id e2)
-  | Lprim(Pfield 0, [Lvar v]) when Ident.same v id ->
+  | Lprim(Pfield (0, _), [Lvar v],_) when Ident.same v id ->
       Lvar id
-  | Lprim(Psetfield(0, _), [Lvar v; e]) when Ident.same v id ->
+  | Lprim(Psetfield(0, _, _), [Lvar v; e], _) when Ident.same v id ->
       Lassign(id, eliminate_ref id e)
   | Lprim(Poffsetref delta, [Lvar v], loc) when Ident.same v id ->
       Lassign(id, Lprim(Poffsetint delta, [Lvar id], loc))
@@ -527,7 +527,7 @@ let rec emit_tail_infos is_tail lambda =
   | Lletrec (bindings, body) ->
       List.iter (fun (_, lam) -> emit_tail_infos false lam) bindings;
       emit_tail_infos is_tail body
-  | Lprim (Pidentity, [arg]) ->
+  | Lprim ((Pidentity | Pbytes_to_string | Pbytes_of_string ), [arg], _) ->
       emit_tail_infos is_tail arg
   | Lprim (Psequand, [arg1; arg2], _)
   | Lprim (Psequor, [arg1; arg2], _) ->
