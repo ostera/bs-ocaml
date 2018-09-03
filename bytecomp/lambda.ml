@@ -55,11 +55,11 @@ type primitive =
   | Pgetglobal of Ident.t
   | Psetglobal of Ident.t
   (* Operations on heap blocks *)
-  | Pmakeblock of int * mutable_flag
   | Pfield of int
   | Psetfield of int * bool
   | Pfloatfield of int
   | Psetfloatfield of int
+  | Pmakeblock of int * tag_info * mutable_flag
   | Pduprecord of Types.record_representation * int
   (* Force lazy values *)
   | Plazyforce

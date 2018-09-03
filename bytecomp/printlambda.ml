@@ -102,10 +102,10 @@ let primitive ppf = function
   | Ploc kind -> fprintf ppf "%s" (string_of_loc_kind kind)
   | Pgetglobal id -> fprintf ppf "global %a" Ident.print id
   | Psetglobal id -> fprintf ppf "setglobal %a" Ident.print id
-  | Pmakeblock(tag, Immutable) -> fprintf ppf "makeblock %i" tag
-  | Pmakeblock(tag, Mutable) -> fprintf ppf "makemutable %i" tag
   | Pfield n -> fprintf ppf "field %i" n
   | Psetfield(n, ptr) ->
+  | Pmakeblock(tag, _, Immutable) -> fprintf ppf "makeblock %i" tag
+  | Pmakeblock(tag, _, Mutable) -> fprintf ppf "makemutable %i" tag
       let instr = if ptr then "setfield_ptr " else "setfield_imm " in
       fprintf ppf "%s%i" instr n
   | Pfloatfield n -> fprintf ppf "floatfield %i" n

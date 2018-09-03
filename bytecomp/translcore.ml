@@ -144,8 +144,8 @@ let primitives_table = create_hashtable 57 [
   "%field0", Pfield 0;
   "%field1", Pfield 1;
   "%setfield0", Psetfield(0, true);
-  "%makeblock", Pmakeblock(0, Immutable);
-  "%makemutable", Pmakeblock(0, Mutable);
+  "%makeblock", Pmakeblock(0, Lambda.default_tag_info, Immutable);
+  "%makemutable", Pmakeblock(0,Lambda.ref_tag_info,  Mutable);
   "%raise", Praise Raise_regular;
   "%reraise", Praise Raise_reraise;
   "%raise_notrace", Praise Raise_notrace;
@@ -421,7 +421,7 @@ let transl_primitive loc p =
       | 1 -> (* TODO: we should issue a warning ? *)
         let param = Ident.create "prim" in
         Lfunction(Curried, [param],
-          Lprim(Pmakeblock(0, Immutable), [lam; Lvar param]))
+          Lprim(Pmakeblock(0, Lambda.Blk_tuple, Immutable), [lam; Lvar param], loc))
       | _ -> assert false
     end
   | _ ->
@@ -613,7 +613,7 @@ let assert_failed exp =
   in   
 #end  
   Lprim(Praise Raise_regular, [event_after exp
-    (Lprim(Pmakeblock(0, Immutable),
+    (Lprim(Pmakeblock(0, Lambda.default_tag_info, Immutable),
           [transl_normal_path Predef.path_assert_failure;
            Lconst(Const_block(0, Lambda.Blk_tuple,
               [Const_base(Const_string (fname, None));
@@ -712,19 +712,19 @@ and transl_exp0 e =
               | _ ->
                   k
             in
-            wrap0 (Lprim(Praise k, [event_after arg1 targ]))
+            wrap0 (Lprim(Praise k, [event_after arg1 targ], e.exp_loc))
         | (Ploc kind, []) ->
           lam_of_loc kind e.exp_loc
         | (Ploc kind, [arg1]) ->
           let lam = lam_of_loc kind arg1.exp_loc in
-          Lprim(Pmakeblock(0, Immutable), lam :: argl)
+          Lprim(Pmakeblock(0, Lambda.default_tag_info, Immutable), lam :: argl, e.exp_loc)
         | (Ploc _, _) -> assert false
         | (_, _) ->
             begin match (prim, argl) with
             | (Plazyforce, [a]) ->
                 wrap (Matching.inline_lazy_force a e.exp_loc)
             | (Plazyforce, _) -> assert false
-            |_ -> let p = Lprim(prim, argl) in
+            |_ -> let p = Lprim(prim, argl, e.exp_loc) in
                if primitive_is_ccall prim then wrap p else wrap0 p
             end
       end
@@ -742,7 +742,7 @@ and transl_exp0 e =
       begin try
         Lconst(Const_block(0, tag_info, List.map extract_constant ll))
       with Not_constant ->
-        Lprim(Pmakeblock(0, Immutable), ll)
+        Lprim(Pmakeblock(0,  tag_info, Immutable), ll, e.exp_loc)
       end
   | Texp_construct(lid, cstr, args) ->
       let ll = transl_list args in
@@ -771,14 +771,14 @@ and transl_exp0 e =
           begin try
             Lconst(Const_block(n,tag_info, List.map extract_constant ll))
           with Not_constant ->
-            Lprim(Pmakeblock(n, Immutable), ll)
+            Lprim(Pmakeblock(n, tag_info, Immutable), ll, e.exp_loc)
           end
       | Cstr_extension(path, is_const) ->
           if is_const then
             transl_path e.exp_env path
           else
-            Lprim(Pmakeblock(0, Immutable),
-                  transl_path e.exp_env path :: ll)
+            Lprim(Pmakeblock(0, Lambda.default_tag_info, Immutable),
+                  transl_path e.exp_env path :: ll, e.exp_loc)
       end
   | Texp_variant(l, arg) ->
       let tag = Btype.hash_variant l in
@@ -791,8 +791,8 @@ and transl_exp0 e =
             Lconst(Const_block(0, tag_info, [Const_base(Const_int tag);
                                    extract_constant lam]))
           with Not_constant ->
-            Lprim(Pmakeblock(0, Immutable),
-                  [Lconst(Const_base(Const_int tag)); lam])
+            Lprim(Pmakeblock(0, tag_info, Immutable),
+                  [Lconst(Const_base(Const_int tag)); lam], e.exp_loc)
       end
   | Texp_record ((_, lbl1, _) :: _ as lbl_expr_list, opt_init_expr) ->
       transl_record lbl1.lbl_all lbl1.lbl_repres lbl_expr_list opt_init_expr
@@ -897,14 +897,14 @@ and transl_exp0 e =
       | Texp_construct (_, {cstr_arity = 0}, _)
         -> transl_exp e
       | Texp_constant(Const_float _) ->
-          Lprim(Pmakeblock(Obj.forward_tag, Immutable), [transl_exp e])
+          Lprim(Pmakeblock(Obj.forward_tag, Lambda.default_tag_info, Immutable), [transl_exp e], e.exp_loc)
       | Texp_ident(_, _, _) -> (* according to the type *)
           begin match e.exp_type.desc with
           (* the following may represent a float/forward/lazy: need a
              forward_tag *)
           | Tvar _ | Tlink _ | Tsubst _ | Tunivar _
           | Tpoly(_,_) | Tfield(_,_,_,_) ->
-              Lprim(Pmakeblock(Obj.forward_tag, Immutable), [transl_exp e])
+              Lprim(Pmakeblock(Obj.forward_tag, Lambda.default_tag_info, Immutable), [transl_exp e], e.exp_loc)
           (* the following cannot be represented as float/forward/lazy:
              optimize *)
           | Tarrow(_,_,_,_) | Ttuple _ | Tpackage _ | Tobject(_,_) | Tnil
@@ -926,12 +926,12 @@ and transl_exp0 e =
                 || has_base_type e Predef.path_int64
               then transl_exp e
               else
-                Lprim(Pmakeblock(Obj.forward_tag, Immutable), [transl_exp e])
+                Lprim(Pmakeblock(Obj.forward_tag, Lambda.default_tag_info, Immutable), [transl_exp e], e.exp_loc)
           end
       (* other cases compile to a lazy block holding a function *)
       | _ ->
           let fn = Lfunction (Curried, [Ident.create "param"], transl_exp e) in
-          Lprim(Pmakeblock(Config.lazy_tag, Mutable), [fn])
+          Lprim(Pmakeblock(Config.lazy_tag, Lambda.default_tag_info, Mutable), [fn], e.exp_loc)
       end
   | Texp_object (cs, meths) ->
       let cty = cs.cstr_type in
@@ -1129,8 +1129,8 @@ and transl_record loc all_labels repres lbl_expr_list opt_init_expr =
             Lconst(Const_float_array(List.map extract_float cl))
       with Not_constant ->
         match repres with
-          Record_regular -> Lprim(Pmakeblock(0, mut), ll)
-        | Record_float -> Lprim(Pmakearray Pfloatarray, ll) in
+          Record_regular -> Lprim(Pmakeblock(0, Lambda.Blk_record all_labels_info, mut), ll,loc)
+        | Record_float -> Lprim(Pmakearray Pfloatarray, ll, loc) in
     begin match opt_init_expr with
       None -> lam
     | Some init_expr -> Llet(Strict, init_id, transl_exp init_expr, lam)

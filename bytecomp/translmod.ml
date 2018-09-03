@@ -56,12 +56,14 @@ let transl_extension_constructor env path ext =
       None -> Ident.name ext.ext_id
     | Some p -> Path.name p
   in
+  let loc = ext.ext_loc in
   match ext.ext_kind with
     Text_decl(args, ret) ->
+      let tag_info = Blk_extension_slot in 
       Lprim(prim_set_oo_id,
-            [Lprim(Pmakeblock(Obj.object_tag, Mutable),
+            [Lprim(Pmakeblock(Obj.object_tag, tag_info, Mutable),
                    [Lconst(Const_base(Const_string (name,None)));
-                    Lconst(Const_base(Const_int 0))])])
+                    Lconst(Const_base(Const_int 0))], loc)], loc)
   | Text_rebind(path, lid) ->
       transl_path ~loc env path
 
@@ -85,8 +87,8 @@ let rec apply_coercion loc strict restr arg =
       name_lambda strict arg (fun id ->
         let get_field pos = Lprim(Pfield pos,[Lvar id]) in
         let lam =
-          Lprim(Pmakeblock(0, Immutable),
-                List.map (apply_coercion_field get_field) pos_cc_list)
+          Lprim(Pmakeblock(0, Lambda.default_tag_info, Immutable),
+                List.map (apply_coercion_field loc get_field) pos_cc_list, loc)
         in
         wrap_id_pos_list loc id_pos_list get_field lam)
   | Tcoerce_functor(cc_arg, cc_res) ->
@@ -326,6 +328,7 @@ let rec bound_value_identifiers = function
 (* Compile a module expression *)
 
 let rec transl_module cc rootpath mexp =
+  let loc = mexp.mod_loc in
   match mexp.mod_type with
     Mty_alias _ -> apply_coercion loc Alias cc lambda_unit
   | _ ->
@@ -368,8 +371,10 @@ and transl_structure loc fields cc rootpath = function
     [] ->
       begin match cc with
         Tcoerce_none ->
-          Lprim(Pmakeblock(0, Immutable),
                 List.map (fun id -> Lvar id) (List.rev fields))
+          let fields =  List.rev fields in
+          let field_names = List.map (fun id -> id.Ident.name) fields in
+          Lprim(Pmakeblock(0, Lambda.Blk_module (Some field_names) , Immutable),
       | Tcoerce_structure(pos_cc_list, id_pos_list) ->
               (* Do not ignore id_pos_list ! *)
           (*Format.eprintf "%a@.@[" Includemod.print_coercion cc;
@@ -618,7 +623,7 @@ let transl_store_structure glob map prims str =
     Lsequence(lam,
               Llet(Strict, id,
                    subst_lambda subst
-                   (Lprim(Pmakeblock(0, Immutable),
+                   (Lprim(Pmakeblock(0, Lambda.default_tag_info, Immutable),
                           List.map (fun id -> Lvar id)
                                    (defined_idents str.str_items),loc)),
                    Lsequence(store_ident loc id,
@@ -887,8 +892,8 @@ let get_component = function
 
 let transl_package component_names target_name coercion =
   let components =
-    Lprim(Pmakeblock(0, Immutable), List.map get_component component_names) in
-  Lprim(Psetglobal target_name, [apply_coercion Strict coercion components])
+    Lprim(Pmakeblock(0, Lambda.default_tag_info, Immutable), List.map get_component component_names, Location.none) in
+  Lprim(Psetglobal target_name, [apply_coercion Location.none Strict coercion components], Location.none)
   (*
   let components =
     match coercion with
@@ -921,11 +926,11 @@ let transl_store_package component_names target_name coercion =
          0 component_names)
   | Tcoerce_structure (pos_cc_list, id_pos_list) ->
       let components =
-        Lprim(Pmakeblock(0, Immutable), List.map get_component component_names)
+        Lprim(Pmakeblock(0, Lambda.default_tag_info, Immutable), List.map get_component component_names, Location.none)
       in
       let blk = Ident.create "block" in
       (List.length pos_cc_list,
-       Llet (Strict, blk, apply_coercion Strict coercion components,
+       Llet (Strict, blk, apply_coercion Location.none Strict coercion components,
              make_sequence
                (fun pos id ->
                  Lprim(Psetfield(pos, false),
