@@ -2782,3 +2782,7 @@
 /yacc/ocamlyacc.exe
 /yacc/version.h
 /yacc/.gdb_history
+
+/.vscode/
+stdlib/target_camlheader
+stdlib/target_camlheaderd

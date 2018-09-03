@@ -47,7 +47,7 @@ PARSING=parsing/location.cmo parsing/longident.cmo \
   parsing/syntaxerr.cmo parsing/parser.cmo \
   parsing/lexer.cmo parsing/parse.cmo parsing/printast.cmo \
   parsing/pprintast.cmo \
-  parsing/ast_mapper.cmo
+  parsing/ast_mapper.cmo parsing/depend.cmo
 
 TYPING=typing/ident.cmo typing/path.cmo \
   typing/primitive.cmo typing/types.cmo \
@@ -64,12 +64,12 @@ TYPING=typing/ident.cmo typing/path.cmo \
   typing/typemod.cmo
 
 COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
-  bytecomp/typeopt.cmo bytecomp/switch.cmo bytecomp/matching.cmo \
+  bytecomp/typeopt.cmo bytecomp/switch.cmo  bytecomp/matching.cmo \
   bytecomp/translobj.cmo bytecomp/translcore.cmo \
   bytecomp/translclass.cmo bytecomp/translmod.cmo \
   bytecomp/simplif.cmo bytecomp/runtimedef.cmo \
   driver/pparse.cmo driver/main_args.cmo \
-  driver/compenv.cmo driver/compmisc.cmo
+  driver/compenv.cmo driver/compmisc.cmo 
 
 COMMON=$(UTILS) $(PARSING) $(TYPING) $(COMP)
 
