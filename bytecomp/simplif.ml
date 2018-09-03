@@ -570,7 +570,7 @@ let rec emit_tail_infos is_tail lambda =
       List.iter (fun (_, lam) -> emit_tail_infos false lam) bindings;
       emit_tail_infos is_tail body
   | Lprim ((Pidentity | Pbytes_to_string | Pbytes_of_string), [arg], _) ->
-      emit_tail_infos is_tail arg
+      emit_tail_infos is_tail arg (* This could be wrong in the future, [bytes_[to|of]_string] is not a nop, true in js backend*)
   | Lprim (Psequand, [arg1; arg2], _)
   | Lprim (Psequor, [arg1; arg2], _) ->
       emit_tail_infos false arg1;
