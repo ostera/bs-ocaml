@@ -807,9 +807,9 @@ and transl_exp0 e =
   | Texp_setfield(arg, _, lbl, newval) ->
       let access =
         match lbl.lbl_repres with
-        | Record_float -> Psetfloatfield lbl.lbl_pos in
-      Lprim(access, [transl_exp arg; transl_exp newval])
           Record_regular -> Psetfield(lbl.lbl_pos, maybe_pointer newval, Fld_record_set lbl.lbl_name)
+        | Record_float -> Psetfloatfield (lbl.lbl_pos, Fld_record_set lbl.lbl_name) in
+      Lprim(access, [transl_exp arg; transl_exp newval], e.exp_loc)
   | Texp_array expr_list ->
       let kind = array_kind e in
       let ll = transl_list expr_list in
@@ -1144,9 +1144,9 @@ and transl_record loc all_labels repres lbl_expr_list opt_init_expr =
     let update_field (_, lbl, expr) cont =
       let upd =
         match lbl.lbl_repres with
-        | Record_float -> Psetfloatfield lbl.lbl_pos in
-      Lsequence(Lprim(upd, [Lvar copy_id; transl_exp expr]), cont) in
           Record_regular -> Psetfield(lbl.lbl_pos, maybe_pointer expr, Fld_record_set lbl.lbl_name)
+        | Record_float -> Psetfloatfield (lbl.lbl_pos, Fld_record_set lbl.lbl_name) in
+      Lsequence(Lprim(upd, [Lvar copy_id; transl_exp expr], loc), cont) in
     begin match opt_init_expr with
       None -> assert false
     | Some init_expr ->
