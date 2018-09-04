@@ -909,13 +909,14 @@ and transl_exp0 e =
   | Texp_setfield(arg, _, lbl, newval) ->
       let access =
         match lbl.lbl_repres with
-          Record_regular
-        | Record_inlined _ -> (* FIXME Fld_record_inlined_set*)
+          Record_regular -> 
           Psetfield(lbl.lbl_pos, maybe_pointer newval, Assignment, Fld_record_set lbl.lbl_name)
+        | Record_inlined _ -> 
+          Psetfield(lbl.lbl_pos, maybe_pointer newval, Assignment, Fld_record_inline_set lbl.lbl_name)
         | Record_unboxed _ -> assert false
         | Record_float -> Psetfloatfield (lbl.lbl_pos, Assignment)
-        | Record_extension -> (* FIXME Record_extension *)
-          Psetfield (lbl.lbl_pos + 1, maybe_pointer newval, Assignment, Fld_set_na)
+        | Record_extension -> 
+          Psetfield (lbl.lbl_pos + 1, maybe_pointer newval, Assignment, Fld_record_extension_set lbl.lbl_name)
       in
       Lprim(access, [transl_exp arg; transl_exp newval], e.exp_loc)
   | Texp_array expr_list ->
@@ -1333,7 +1334,7 @@ and transl_record loc env fields repres opt_init_expr =
               | _ -> assert false
             in
             let slot = transl_extension_path env path in
-            Lprim(Pmakeblock(0, Lambda.default_tag_info, mut, Some (Pgenval :: shape)), slot :: ll, loc) (*FIXME: refine*)
+            Lprim(Pmakeblock(0, Lambda.Blk_record_ext all_labels_info, mut, Some (Pgenval :: shape)), slot :: ll, loc) 
     in
     begin match opt_init_expr with
       None -> lam
@@ -1350,13 +1351,14 @@ and transl_record loc env fields repres opt_init_expr =
       | Overridden (_lid, expr) ->
           let upd =
             match repres with
-              Record_regular
-            | Record_inlined _ -> (* FIXME *)
-                Psetfield(lbl.lbl_pos, maybe_pointer expr, Assignment, Fld_record_set lbl.lbl_name)
+              Record_regular -> 
+              Psetfield(lbl.lbl_pos, maybe_pointer expr, Assignment, Fld_record_set lbl.lbl_name)
+            | Record_inlined _ -> 
+                Psetfield(lbl.lbl_pos, maybe_pointer expr, Assignment, Fld_record_inline_set lbl.lbl_name)
             | Record_unboxed _ -> assert false
             | Record_float -> Psetfloatfield (lbl.lbl_pos, Assignment)
-            | Record_extension -> (* FIXME *)
-                Psetfield(lbl.lbl_pos + 1, maybe_pointer expr, Assignment, Fld_set_na)
+            | Record_extension -> 
+                Psetfield(lbl.lbl_pos + 1, maybe_pointer expr, Assignment, Fld_record_extension_set lbl.lbl_name)
           in
           Lsequence(Lprim(upd, [Lvar copy_id; transl_exp expr], loc), cont)
     in

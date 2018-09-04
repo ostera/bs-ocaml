@@ -1275,7 +1275,7 @@ let transl_package_flambda component_names coercion =
   in
   size,
   apply_coercion Location.none Strict coercion
-    (Lprim(Pmakeblock(0, Lambda.default_tag_info, Immutable, None), (*FIXME: not relevant in flambda *)
+    (Lprim(Pmakeblock(0, Lambda.default_tag_info, Immutable, None), (*NOTE: not relevant in flambda *)
            List.map get_component component_names,
            Location.none))
 
