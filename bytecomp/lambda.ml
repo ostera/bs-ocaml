@@ -43,6 +43,7 @@ type tag_info =
 let default_tag_info : tag_info = Blk_na
 
 let ref_tag_info : tag_info = Blk_record [| "contents" |]
+
 type field_dbg_info = 
   | Fld_na
   | Fld_record of string
@@ -64,8 +65,8 @@ type primitive =
   | Pgetglobal of Ident.t
   | Psetglobal of Ident.t
   (* Operations on heap blocks *)
-  | Pfield of int
   | Pmakeblock of int * tag_info * mutable_flag
+  | Pfield of int * field_dbg_info
   | Psetfield of int * bool * set_field_dbg_info
   | Pfloatfield of int * field_dbg_info
   | Psetfloatfield of int * set_field_dbg_info
@@ -489,7 +490,7 @@ let rec transl_normal_path = function
     Pident id ->
       if Ident.global id then Lprim(Pgetglobal id, [], Location.none) else Lvar id
   | Pdot(p, s, pos) ->
-      Lprim(Pfield pos, [transl_normal_path p])
+      Lprim(Pfield (pos, Fld_module s ), [transl_normal_path p],Location.none)
   | Papply(p1, p2) ->
       fatal_error "Lambda.transl_path"
 

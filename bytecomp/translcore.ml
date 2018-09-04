@@ -139,10 +139,12 @@ let comparisons_table = create_hashtable 11 [
 ]
 
 let primitives_table = create_hashtable 57 [
+  "%bytes_to_string", Pbytes_to_string;
+  "%bytes_of_string", Pbytes_of_string;
   "%identity", Pidentity;
   "%ignore", Pignore;
-  "%field0", Pfield 0;
-  "%field1", Pfield 1;
+  "%field0", Pfield (0, Fld_na);
+  "%field1", Pfield (1, Fld_na);
   "%setfield0", Psetfield(0, true, Fld_set_na);
   "%makeblock", Pmakeblock(0, Lambda.default_tag_info, Immutable);
   "%makemutable", Pmakeblock(0,Lambda.ref_tag_info,  Mutable);
@@ -801,7 +803,7 @@ and transl_exp0 e =
   | Texp_field(arg, _, lbl) ->
       let access =
         match lbl.lbl_repres with
-          Record_regular -> Pfield lbl.lbl_pos
+          Record_regular -> Pfield (lbl.lbl_pos, Fld_record lbl.lbl_name)
         | Record_float -> Pfloatfield (lbl.lbl_pos, Fld_record lbl.lbl_name) in
       Lprim(access, [transl_exp arg], e.exp_loc)
   | Texp_setfield(arg, _, lbl, newval) ->
@@ -857,7 +859,7 @@ and transl_exp0 e =
       in
       event_after e lam
   | Texp_new (cl, {Location.loc=loc}, _) ->
-      Lapply(Lprim(Pfield 0, [transl_path ~loc e.exp_env cl]),
+      Lapply(Lprim(Pfield (0, Fld_na), [transl_path ~loc e.exp_env cl], loc),
              [lambda_unit], Location.none)
   | Texp_instvar(path_self, path, _) ->
       Lprim(Parrayrefu Paddrarray,
@@ -1104,8 +1106,9 @@ and transl_record loc all_labels repres lbl_expr_list opt_init_expr =
     | Some init_expr ->
         for i = 0 to Array.length all_labels - 1 do
           let access =
-            match all_labels.(i).lbl_repres with
-              Record_regular -> Pfield i
+            let lbl = all_labels.(i) in
+            match lbl.lbl_repres with
+              Record_regular -> Pfield (i, Fld_record lbl.lbl_name)
             | Record_float -> Pfloatfield (i, Fld_record lbl.lbl_name)  in
           lv.(i) <- Lprim(access, [Lvar init_id], loc)
         done

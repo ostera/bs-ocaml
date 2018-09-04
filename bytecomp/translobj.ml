@@ -110,7 +110,7 @@ let transl_label_init expr =
   expr
 
 let transl_store_label_init glob size f arg =
-  method_cache := Lprim(Pfield size, [Lprim(Pgetglobal glob, [])]);
+  method_cache := Lprim(Pfield (size, Fld_na), [Lprim(Pgetglobal glob, [], Location.none)], Location.none);
   let expr = f arg in
   let (size, expr) =
     if !method_count = 0 then (size, expr) else

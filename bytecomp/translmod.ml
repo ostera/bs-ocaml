@@ -90,7 +90,7 @@ let rec apply_coercion loc strict restr arg =
       arg
   | Tcoerce_structure(pos_cc_list, id_pos_list) ->
       name_lambda strict arg (fun id ->
-        let get_field pos = Lprim(Pfield pos,[Lvar id]) in
+        let get_field pos = Lprim(Pfield (pos, Fld_na (*TODO*)),[Lvar id], loc) in
         let lam =
           Lprim(Pmakeblock(0, Lambda.default_tag_info, Immutable),
                 List.map (apply_coercion_field loc get_field) pos_cc_list, loc)
@@ -492,7 +492,7 @@ and transl_structure loc fields cc rootpath = function
         [] ->
           transl_structure loc newfields cc rootpath rem
       | id :: ids ->
-          Llet(Alias, id, Lprim(Pfield pos, [Lvar mid]),
+          Llet(Alias, id, Lprim(Pfield (pos, Fld_na), [Lvar mid], incl.incl_loc),
                rebind_idents (pos + 1) (id :: newfields) ids) in
       Llet(pure_module modl, mid, transl_module Tcoerce_none None modl,
            rebind_idents 0 fields ids)
@@ -706,11 +706,12 @@ let transl_store_structure glob map prims str =
       let ids = bound_value_identifiers incl.incl_type in
       let modl = incl.incl_mod in
       let mid = Ident.create "include" in
+      let loc = incl.incl_loc in
       let rec store_idents pos = function
         [] -> transl_store rootpath (add_idents true ids subst) rem
       | id :: idl ->
-          Llet(Alias, id, Lprim(Pfield pos, [Lvar mid]),
-               Lsequence(store_ident id, store_idents (pos + 1) idl)) in
+          Llet(Alias, id, Lprim(Pfield (pos, Fld_na), [Lvar mid],loc),
+               Lsequence(store_ident loc id, store_idents (pos + 1) idl)) in
       Llet(Strict, mid,
            subst_lambda subst (transl_module Tcoerce_none None modl),
            store_idents 0 ids)
@@ -736,7 +737,7 @@ let transl_store_structure glob map prims str =
       let (pos, cc) = Ident.find_same id map in
       match cc with
         Tcoerce_none ->
-          Ident.add id (Lprim(Pfield pos, [Lprim(Pgetglobal glob, [])])) subst
+          Ident.add id (Lprim(Pfield (pos, Fld_na), [Lprim(Pgetglobal glob, [], Location.none)], Location.none)) subst
       | _ ->
           if may_coerce then subst else assert false
     with Not_found ->
@@ -838,14 +839,14 @@ let toplevel_name id =
   with Not_found -> Ident.name id
 
 let toploop_getvalue id =
-  Lapply(Lprim(Pfield toploop_getvalue_pos,
-                 [Lprim(Pgetglobal toploop_ident, [])]),
+  Lapply(Lprim(Pfield (toploop_getvalue_pos, Fld_na),
+                 [Lprim(Pgetglobal toploop_ident, [], Location.none)], Location.none),
          [Lconst(Const_base(Const_string (toplevel_name id, None)))],
          Location.none)
 
 let toploop_setvalue id lam =
-  Lapply(Lprim(Pfield toploop_setvalue_pos,
-                 [Lprim(Pgetglobal toploop_ident, [])]),
+  Lapply(Lprim(Pfield (toploop_setvalue_pos, Fld_na),
+                 [Lprim(Pgetglobal toploop_ident, [], Location.none)], Location.none),
          [Lconst(Const_base(Const_string (toplevel_name id, None))); lam],
          Location.none)
 
@@ -906,7 +907,7 @@ let transl_toplevel_item item =
         [] ->
           lambda_unit
       | id :: ids ->
-          Lsequence(toploop_setvalue id (Lprim(Pfield pos, [Lvar mid])),
+          Lsequence(toploop_setvalue id (Lprim(Pfield (pos, Fld_na), [Lvar mid], Location.none)),
                     set_idents (pos + 1) ids) in
       Llet(Strict, mid, transl_module Tcoerce_none None modl, set_idents 0 ids)
   | Tstr_modtype _
@@ -973,9 +974,9 @@ let transl_store_package component_names target_name coercion =
        Llet (Strict, blk, apply_coercion Location.none Strict coercion components,
              make_sequence
                (fun pos id ->
-                        Lprim(Pfield pos, [Lvar blk])]))
                  Lprim(Psetfield(pos, false, Fld_set_na),
                        [Lprim(Pgetglobal target_name, [], Location.none);
+                        Lprim(Pfield (pos, Fld_na), [Lvar blk], Location.none)], Location.none))
                0 pos_cc_list))
   (*
               (* ignore id_pos_list as the ids are already bound *)

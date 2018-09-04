@@ -77,8 +77,8 @@ type primitive =
   | Pgetglobal of Ident.t
   | Psetglobal of Ident.t
   (* Operations on heap blocks *)
-  | Pfield of int
   | Pmakeblock of int * tag_info * mutable_flag
+  | Pfield of int * field_dbg_info
   | Psetfield of int * bool * set_field_dbg_info
   (* could have field info at least for record *)
   | Pfloatfield of int * field_dbg_info
