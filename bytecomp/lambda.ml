@@ -43,6 +43,10 @@ type tag_info =
 let default_tag_info : tag_info = Blk_na
 
 let ref_tag_info : tag_info = Blk_record [| "contents" |]
+type set_field_dbg_info = 
+  | Fld_set_na
+  | Fld_record_set of string 
+
 type primitive =
   | Pidentity
   | Pbytes_to_string
@@ -56,10 +60,10 @@ type primitive =
   | Psetglobal of Ident.t
   (* Operations on heap blocks *)
   | Pfield of int
-  | Psetfield of int * bool
   | Pfloatfield of int
   | Psetfloatfield of int
   | Pmakeblock of int * tag_info * mutable_flag
+  | Psetfield of int * bool * set_field_dbg_info
   | Pduprecord of Types.record_representation * int
   (* Force lazy values *)
   | Plazyforce

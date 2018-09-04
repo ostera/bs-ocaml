@@ -46,6 +46,10 @@ val default_tag_info : tag_info
 
 val ref_tag_info : tag_info
 
+type set_field_dbg_info = 
+  | Fld_set_na
+  | Fld_record_set of string 
+
 type pointer_info = 
   | Pt_constructor of string
   | Pt_variant of string 
@@ -69,10 +73,10 @@ type primitive =
   | Psetglobal of Ident.t
   (* Operations on heap blocks *)
   | Pfield of int
-  | Psetfield of int * bool
   | Pfloatfield of int
   | Psetfloatfield of int
   | Pmakeblock of int * tag_info * mutable_flag
+  | Psetfield of int * bool * set_field_dbg_info
   | Pduprecord of Types.record_representation * int
   (* Force lazy values *)
   | Plazyforce

@@ -723,8 +723,8 @@ let transl_store_structure glob map prims str =
   and store_ident loc id =
     try
       let (pos, cc) = Ident.find_same id map in
-      Lprim(Psetfield(pos, false), [Lprim(Pgetglobal glob, []); init_val])
       let init_val = apply_coercion loc Alias cc (Lvar id) in
+      Lprim(Psetfield(pos, false, Fld_set_na), [Lprim(Pgetglobal glob, [], loc); init_val], loc)
     with Not_found ->
       fatal_error("Translmod.store_ident: " ^ Ident.unique_name id)
 
@@ -746,9 +746,9 @@ let transl_store_structure glob map prims str =
     List.fold_right (add_ident may_coerce) idlist subst
 
   and store_primitive (pos, prim) cont =
-    Lsequence(Lprim(Psetfield(pos, false),
-                    [Lprim(Pgetglobal glob, []);
-                     transl_primitive Location.none prim]),
+    Lsequence(Lprim(Psetfield(pos, false, Fld_set_na),
+                    [Lprim(Pgetglobal glob, [], Location.none);
+                     transl_primitive Location.none prim], Location.none),
               cont)
 
   in List.fold_right store_primitive prims
@@ -960,9 +960,9 @@ let transl_store_package component_names target_name coercion =
       (List.length component_names,
        make_sequence
          (fun pos id ->
-           Lprim(Psetfield(pos, false),
-                 [Lprim(Pgetglobal target_name, []);
-                  get_component id]))
+           Lprim(Psetfield(pos, false, Fld_set_na),
+                 [Lprim(Pgetglobal target_name, [], Location.none);
+                  get_component id], Location.none))
          0 component_names)
   | Tcoerce_structure (pos_cc_list, id_pos_list) ->
       let components =
@@ -973,9 +973,9 @@ let transl_store_package component_names target_name coercion =
        Llet (Strict, blk, apply_coercion Location.none Strict coercion components,
              make_sequence
                (fun pos id ->
-                 Lprim(Psetfield(pos, false),
-                       [Lprim(Pgetglobal target_name, []);
                         Lprim(Pfield pos, [Lvar blk])]))
+                 Lprim(Psetfield(pos, false, Fld_set_na),
+                       [Lprim(Pgetglobal target_name, [], Location.none);
                0 pos_cc_list))
   (*
               (* ignore id_pos_list as the ids are already bound *)

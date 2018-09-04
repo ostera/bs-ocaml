@@ -143,7 +143,7 @@ let primitives_table = create_hashtable 57 [
   "%ignore", Pignore;
   "%field0", Pfield 0;
   "%field1", Pfield 1;
-  "%setfield0", Psetfield(0, true);
+  "%setfield0", Psetfield(0, true, Fld_set_na);
   "%makeblock", Pmakeblock(0, Lambda.default_tag_info, Immutable);
   "%makemutable", Pmakeblock(0,Lambda.ref_tag_info,  Mutable);
   "%raise", Praise Raise_regular;
@@ -374,7 +374,7 @@ let transl_prim loc prim args =
     let p = find_primitive loc prim_name in
     (* Try strength reduction based on the type of the argument *)
     begin match (p, args) with
-        (Psetfield(n, _), [arg1; arg2]) -> Psetfield(n, maybe_pointer arg2)
+        (Psetfield(n, _, dbg_info), [arg1; arg2]) -> Psetfield(n, maybe_pointer arg2, dbg_info)
       | (Parraylength Pgenarray, [arg])   -> Parraylength(array_kind arg)
       | (Parrayrefu Pgenarray, arg1 :: _) -> Parrayrefu(array_kind arg1)
       | (Parraysetu Pgenarray, arg1 :: _) -> Parraysetu(array_kind arg1)
@@ -807,9 +807,9 @@ and transl_exp0 e =
   | Texp_setfield(arg, _, lbl, newval) ->
       let access =
         match lbl.lbl_repres with
-          Record_regular -> Psetfield(lbl.lbl_pos, maybe_pointer newval)
         | Record_float -> Psetfloatfield lbl.lbl_pos in
       Lprim(access, [transl_exp arg; transl_exp newval])
+          Record_regular -> Psetfield(lbl.lbl_pos, maybe_pointer newval, Fld_record_set lbl.lbl_name)
   | Texp_array expr_list ->
       let kind = array_kind e in
       let ll = transl_list expr_list in
@@ -1144,9 +1144,9 @@ and transl_record loc all_labels repres lbl_expr_list opt_init_expr =
     let update_field (_, lbl, expr) cont =
       let upd =
         match lbl.lbl_repres with
-          Record_regular -> Psetfield(lbl.lbl_pos, maybe_pointer expr)
         | Record_float -> Psetfloatfield lbl.lbl_pos in
       Lsequence(Lprim(upd, [Lvar copy_id; transl_exp expr]), cont) in
+          Record_regular -> Psetfield(lbl.lbl_pos, maybe_pointer expr, Fld_record_set lbl.lbl_name)
     begin match opt_init_expr with
       None -> assert false
     | Some init_expr ->
