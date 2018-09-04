@@ -830,7 +830,7 @@ let transl_class ids cl_id pub_meths cl vflag =
                                     inh_keys, Location.none)]),
          lam)
   and lset cached i lam =
-    Lprim(Psetfield(i, Pointer, Assignment),
+    Lprim(Psetfield(i, Pointer, Assignment, Fld_set_na),
           [Lvar cached; lam], Location.none)
   in
   let ldirect () =

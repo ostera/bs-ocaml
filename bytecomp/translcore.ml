@@ -178,7 +178,7 @@ let primitives_table = create_hashtable 57 [
   "%loc_MODULE", Ploc Loc_MODULE;
   "%field0", Pfield 0;
   "%field1", Pfield 1;
-  "%setfield0", Psetfield(0, Pointer, Assignment);
+  "%setfield0", Psetfield(0, Pointer, Assignment, Fld_set_na);
   "%makeblock", Pmakeblock(0, Lambda.default_tag_info, Immutable, None);
   "%makemutable", Pmakeblock(0, Lambda.ref_tag_info, Mutable, None);
   "%raise", Praise Raise_regular;
@@ -430,8 +430,8 @@ let specialize_primitive p env ty ~has_constant_constructor =
         | Some (p2, _) -> [p1;p2]
     in
     match (p, params) with
-      (Psetfield(n, _, init), [_p1; p2]) ->
-        Psetfield(n, maybe_pointer_type env p2, init)
+      (Psetfield(n, _, init, dbg_info), [_p1; p2]) ->
+        Psetfield(n, maybe_pointer_type env p2, init, dbg_info)
     | (Parraylength t, [p])   ->
         Parraylength(glb_array_type t (array_type_kind env p))
     | (Parrayrefu t, p1 :: _) ->
@@ -910,12 +910,12 @@ and transl_exp0 e =
       let access =
         match lbl.lbl_repres with
           Record_regular
-        | Record_inlined _ ->
-          Psetfield(lbl.lbl_pos, maybe_pointer newval, Assignment)
+        | Record_inlined _ -> (* FIXME Fld_record_inlined_set*)
+          Psetfield(lbl.lbl_pos, maybe_pointer newval, Assignment, Fld_record_set lbl.lbl_name)
         | Record_unboxed _ -> assert false
         | Record_float -> Psetfloatfield (lbl.lbl_pos, Assignment)
-        | Record_extension ->
-          Psetfield (lbl.lbl_pos + 1, maybe_pointer newval, Assignment)
+        | Record_extension -> (* FIXME Record_extension *)
+          Psetfield (lbl.lbl_pos + 1, maybe_pointer newval, Assignment, Fld_set_na)
       in
       Lprim(access, [transl_exp arg; transl_exp newval], e.exp_loc)
   | Texp_array expr_list ->
@@ -1351,12 +1351,12 @@ and transl_record loc env fields repres opt_init_expr =
           let upd =
             match repres with
               Record_regular
-            | Record_inlined _ ->
-                Psetfield(lbl.lbl_pos, maybe_pointer expr, Assignment)
+            | Record_inlined _ -> (* FIXME *)
+                Psetfield(lbl.lbl_pos, maybe_pointer expr, Assignment, Fld_record_set lbl.lbl_name)
             | Record_unboxed _ -> assert false
             | Record_float -> Psetfloatfield (lbl.lbl_pos, Assignment)
-            | Record_extension ->
-                Psetfield(lbl.lbl_pos + 1, maybe_pointer expr, Assignment)
+            | Record_extension -> (* FIXME *)
+                Psetfield(lbl.lbl_pos + 1, maybe_pointer expr, Assignment, Fld_set_na)
           in
           Lsequence(Lprim(upd, [Lvar copy_id; transl_exp expr], loc), cont)
     in
