@@ -1630,7 +1630,7 @@ let make_record_matching loc all_labels def = function
           let access =
             match lbl.lbl_repres with
               Record_regular -> Pfield lbl.lbl_pos
-            | Record_float -> Pfloatfield lbl.lbl_pos in
+            | Record_float -> Pfloatfield (lbl.lbl_pos, Fld_record lbl.lbl_name) in
           let str =
             match lbl.lbl_mut with
               Immutable -> Alias

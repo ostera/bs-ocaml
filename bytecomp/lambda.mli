@@ -46,6 +46,11 @@ val default_tag_info : tag_info
 
 val ref_tag_info : tag_info
 
+type field_dbg_info = 
+  | Fld_na
+  | Fld_record of string
+  | Fld_module of string 
+
 type set_field_dbg_info = 
   | Fld_set_na
   | Fld_record_set of string 
@@ -73,9 +78,10 @@ type primitive =
   | Psetglobal of Ident.t
   (* Operations on heap blocks *)
   | Pfield of int
-  | Pfloatfield of int
   | Pmakeblock of int * tag_info * mutable_flag
   | Psetfield of int * bool * set_field_dbg_info
+  (* could have field info at least for record *)
+  | Pfloatfield of int * field_dbg_info
   | Psetfloatfield of int * set_field_dbg_info
   | Pduprecord of Types.record_representation * int
   (* Force lazy values *)

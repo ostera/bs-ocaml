@@ -802,8 +802,8 @@ and transl_exp0 e =
       let access =
         match lbl.lbl_repres with
           Record_regular -> Pfield lbl.lbl_pos
-        | Record_float -> Pfloatfield lbl.lbl_pos in
-      Lprim(access, [transl_exp arg])
+        | Record_float -> Pfloatfield (lbl.lbl_pos, Fld_record lbl.lbl_name) in
+      Lprim(access, [transl_exp arg], e.exp_loc)
   | Texp_setfield(arg, _, lbl, newval) ->
       let access =
         match lbl.lbl_repres with
@@ -827,7 +827,7 @@ and transl_exp0 e =
               raise Not_constant in             (* can this really happen? *)
         Lprim(Pccall prim_obj_dup, [master])
       with Not_constant ->
-        Lprim(Pmakearray kind, ll)
+        Lprim(Pmakearray kind, ll, e.exp_loc)
       end
   | Texp_ifthenelse(cond, ifso, Some ifnot) ->
       Lifthenelse(transl_exp cond,
@@ -1106,8 +1106,8 @@ and transl_record loc all_labels repres lbl_expr_list opt_init_expr =
           let access =
             match all_labels.(i).lbl_repres with
               Record_regular -> Pfield i
-            | Record_float -> Pfloatfield i in
-          lv.(i) <- Lprim(access, [Lvar init_id])
+            | Record_float -> Pfloatfield (i, Fld_record lbl.lbl_name)  in
+          lv.(i) <- Lprim(access, [Lvar init_id], loc)
         done
     end;
     List.iter
