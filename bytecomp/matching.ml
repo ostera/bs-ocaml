@@ -1347,6 +1347,17 @@ let make_constr_matching p def ctx = function
     [] -> fatal_error "Matching.make_constr_matching"
   | ((arg, mut) :: argl) ->
       let cstr = pat_as_constr p in
+      (* (if Datarepr.constructor_has_optional_shape cstr then *)
+      (*    match p.pat_desc with *)
+      (*    | Tpat_construct(_, _, *)
+      (*                     [ {  pat_type} ]) *)
+      (*      -> *)
+      (*        if Datarepr.cannot_inhabit_none_like_value pat_type then  *)
+      (*          Format.fprintf *)
+      (*            Format.err_formatter "@[special unboxing: %a @]@." *)
+      (*            Printtyp.raw_type_expr pat_type *)
+      (*    | _ -> () *)
+      (* ); *)
       let newargs =
         match cstr.cstr_tag with
           Cstr_constant _ | Cstr_block _ ->
