@@ -1313,6 +1313,18 @@ let matcher_constr cstr = match cstr.cstr_arity with
     | Tpat_any -> Parmatch.omegas cstr.cstr_arity @ rem
     | _        -> raise NoMatch
 
+let is_none_bs_primitve : Lambda.primitive =
+  Pccall 
+    (Primitive.simple ~name:"#is_none" ~arity:1 ~alloc:false)
+
+let val_from_option_bs_primitive : Lambda.primitive =
+  Pccall 
+    (Primitive.simple ~name:"#val_from_option" ~arity:1 ~alloc:true)
+
+let val_from_unnest_option_bs_primitive : Lambda.primitive =
+  Pccall
+    (Primitive.simple ~name:"#val_from_unnest_option" ~arity:1 ~alloc:true)
+
 let make_constr_matching p def ctx = function
     [] -> fatal_error "Matching.make_constr_matching"
   | ((arg, _mut) :: argl) ->
@@ -1321,7 +1333,24 @@ let make_constr_matching p def ctx = function
         if cstr.cstr_inlined <> None then
           (arg, Alias) :: argl
         else match cstr.cstr_tag with
-          Cstr_constant _ | Cstr_block _ ->
+        | Cstr_block _ when
+            !Clflags.bs_only &&
+            Datarepr.constructor_has_optional_shape cstr
+          ->
+            begin
+              let from_option = 
+                match p.pat_desc with
+                | Tpat_construct(_, _,
+                                 [ {
+                                   pat_type ; pat_env
+                                 } ])
+                  when Typeopt.cannot_inhabit_none_like_value pat_type pat_env
+                  -> val_from_unnest_option_bs_primitive
+                | _ -> val_from_option_bs_primitive in 
+              (Lprim (from_option, [arg], p.pat_loc), Alias) :: argl
+            end
+        | Cstr_constant _
+        | Cstr_block _ ->
             make_field_args p.pat_loc Alias arg 0 (cstr.cstr_arity - 1) argl
         | Cstr_unboxed -> (arg, Alias) :: argl
         | Cstr_extension _ ->
@@ -2354,7 +2383,15 @@ let combine_constructor loc arg ex_pat cstr partial ctx def
           | (1, 1, [0, act1], [0, act2]) ->
            (* Typically, match on lists, will avoid isint primitive in that
               case *)
-              Lifthenelse(arg, act2, act1)
+              let arg = 
+                if !Clflags.bs_only && Datarepr.constructor_has_optional_shape cstr then
+                  Lprim(is_none_bs_primitve , [arg], loc)
+                else arg
+              in 
+                Lifthenelse(arg, act2, act1)
+          | (2,0, [(i1,act1); (_,act2)],[]) ->
+            if i1 = 0 then Lifthenelse(arg, act2, act1)
+            else Lifthenelse (arg,act1,act2)                
           | (n,0,_,[])  -> (* The type defines constant constructors only *)
               call_switcher loc fail_opt arg 0 (n-1) consts
           | (n, _, _, _) ->
