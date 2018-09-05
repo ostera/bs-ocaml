@@ -150,8 +150,8 @@ let oo_wrap env req f x =
       List.fold_left
         (fun lambda id ->
           Llet(StrictOpt, id,
-               Lprim(Pmakeblock(0, Mutable),
-                     [lambda_unit; lambda_unit; lambda_unit]),
+               Lprim(Pmakeblock(0, Lambda.default_tag_info, Mutable),
+                     [lambda_unit; lambda_unit; lambda_unit], Location.none),
                lambda))
         lambda !classes
     in
