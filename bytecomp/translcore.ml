@@ -498,6 +498,10 @@ let transl_primitive loc p env ty path =
       let rec make_params n =
         if n <= 0 then [] else Ident.create "prim" :: make_params (n-1) in
       let params = make_params p.prim_arity in
+#if undefined BS_NO_COMPILER_PATCH then 
+      if params = [] then Lprim (prim, [], loc) (* arity = 0 in Buckle? TODO: unneeded*)
+      else
+#end      
       Lfunction{ kind = Curried; params;
                  attr = default_stub_attribute;
                  loc = loc;
@@ -526,7 +530,7 @@ exception Not_constant
 
 let extract_constant = function
     Lconst sc -> sc
-  | _ -> raise Not_constant
+  | _ -> raise_notrace Not_constant
 
 let extract_float = function
     Const_base(Const_float f) -> f
@@ -600,7 +604,7 @@ let rec push_defaults loc bindings cases partial =
 let event_before exp lam = match lam with
 | Lstaticraise (_,_) -> lam
 | _ ->
-  if !Clflags.debug && not !Clflags.native_code
+  if !Clflags.record_event_when_debug && !Clflags.debug && not !Clflags.native_code
   then Levent(lam, {lev_loc = exp.exp_loc;
                     lev_kind = Lev_before;
                     lev_repr = None;
@@ -608,7 +612,7 @@ let event_before exp lam = match lam with
   else lam
 
 let event_after exp lam =
-  if !Clflags.debug && not !Clflags.native_code
+  if !Clflags.record_event_when_debug && !Clflags.debug && not !Clflags.native_code
   then Levent(lam, {lev_loc = exp.exp_loc;
                     lev_kind = Lev_after exp.exp_type;
                     lev_repr = None;
@@ -616,7 +620,7 @@ let event_after exp lam =
   else lam
 
 let event_function exp lam =
-  if !Clflags.debug && not !Clflags.native_code then
+  if !Clflags.record_event_when_debug && !Clflags.debug && not !Clflags.native_code then
     let repr = Some (ref 0) in
     let (info, body) = lam repr in
     (info,
@@ -1037,7 +1041,10 @@ and transl_exp0 e =
   | Texp_pack modl ->
       !transl_module Tcoerce_none None modl
   | Texp_assert {exp_desc=Texp_construct(_, {cstr_name="false"}, _)} ->
-      assert_failed e
+      if !Clflags.no_assert_false then
+        Lambda.lambda_assert_false
+      else 
+        assert_failed e  
   | Texp_assert (cond) ->
       if !Clflags.noassert
       then lambda_unit
