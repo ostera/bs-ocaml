@@ -70,7 +70,7 @@ let transl_extension_constructor env path ext =
 type specialized = {
   gencomp : Lambda.primitive;
   intcomp : Lambda.primitive;
-  (* boolcomp : Lambda.primitive; *)
+  boolcomp : Lambda.primitive;
   floatcomp : Lambda.primitive;
   stringcomp : Lambda.primitive;
   bytescomp : Lambda.primitive;
@@ -86,6 +86,9 @@ let comparisons_table = Lazy.from_fun @@ fun _ ->
       {
         gencomp = Pccall(Primitive.simple ~name:"caml_equal" ~arity:2 ~alloc:true);
         intcomp = Pintcomp Ceq;
+        boolcomp = if not !Clflags.bs_only then Pintcomp Ceq
+        else Pccall (Primitive.simple ~name:"caml_bool_equal" ~arity:2
+                      ~alloc:false); 
         floatcomp = Pfloatcomp Ceq;
         stringcomp = Pccall(Primitive.simple ~name:"caml_string_equal" ~arity:2
                 ~alloc:false);
@@ -98,6 +101,9 @@ let comparisons_table = Lazy.from_fun @@ fun _ ->
   "%notequal",
       { gencomp = Pccall(Primitive.simple ~name:"caml_notequal" ~arity:2 ~alloc:true);
         intcomp = Pintcomp Cneq;
+        boolcomp = if not !Clflags.bs_only then Pintcomp Cneq
+            else Pccall (Primitive.simple ~name:"caml_bool_notequal" ~arity:2
+                  ~alloc:false) ;         
         floatcomp = Pfloatcomp Cneq;
         stringcomp = Pccall(Primitive.simple ~name:"caml_string_notequal" ~arity:2
                 ~alloc:false);
@@ -110,6 +116,9 @@ let comparisons_table = Lazy.from_fun @@ fun _ ->
   "%lessthan",
       { gencomp = Pccall(Primitive.simple ~name:"caml_lessthan" ~arity:2 ~alloc:true);
         intcomp = Pintcomp Clt;
+        boolcomp = if not !Clflags.bs_only then Pintcomp Clt
+        else Pccall (Primitive.simple ~name:"caml_bool_lessthan" ~arity:2
+                     ~alloc:false);
         floatcomp = Pfloatcomp Clt;
         stringcomp = Pccall(Primitive.simple ~name:"caml_string_lessthan" ~arity:2
                 ~alloc:false);
@@ -122,6 +131,9 @@ let comparisons_table = Lazy.from_fun @@ fun _ ->
   "%greaterthan",
       { gencomp = Pccall(Primitive.simple ~name:"caml_greaterthan" ~arity:2 ~alloc:true);
         intcomp = Pintcomp Cgt;
+        boolcomp = if not !Clflags.bs_only then Pintcomp Cgt
+        else Pccall (Primitive.simple ~name:"caml_bool_greaterthan" ~arity:2
+            ~alloc:false);
         floatcomp = Pfloatcomp Cgt;
         stringcomp = Pccall(Primitive.simple ~name:"caml_string_greaterthan" ~arity:2
                 ~alloc: false);
@@ -134,6 +146,9 @@ let comparisons_table = Lazy.from_fun @@ fun _ ->
   "%lessequal",
       { gencomp = Pccall(Primitive.simple ~name:"caml_lessequal" ~arity:2 ~alloc:true);
         intcomp = Pintcomp Cle;
+        boolcomp = if not !Clflags.bs_only then Pintcomp Cle
+        else Pccall( Primitive.simple ~name:"caml_bool_lessequal" ~arity:2
+                    ~alloc:false);
         floatcomp = Pfloatcomp Cle;
         stringcomp = Pccall(Primitive.simple ~name:"caml_string_lessequal" ~arity:2
                 ~alloc:false);
@@ -146,6 +161,9 @@ let comparisons_table = Lazy.from_fun @@ fun _ ->
   "%greaterequal",
       { gencomp = Pccall(Primitive.simple ~name:"caml_greaterequal" ~arity:2 ~alloc:true);
         intcomp = Pintcomp Cge;
+        boolcomp = if not !Clflags.bs_only then Pintcomp Cge
+        else Pccall (Primitive.simple ~name:"caml_bool_greaterequal" ~arity:2
+                    ~alloc:false);
         floatcomp = Pfloatcomp Cge;
         stringcomp = Pccall(Primitive.simple ~name:"caml_string_greaterequal" ~arity:2
                 ~alloc:false);
@@ -165,6 +183,12 @@ let comparisons_table = Lazy.from_fun @@ fun _ ->
       { gencomp = Pccall(Primitive.simple ~name:"caml_compare" ~arity:2 ~alloc:true);
        (* Not unboxed since the comparison is done directly on tagged int *)
         intcomp = Pccall(Primitive.simple ~name:"caml_int_compare" ~arity:2 ~alloc:false);
+        boolcomp = if not !Clflags.bs_only then
+            Pccall(Primitive.simple ~name:"caml_int_compare" ~arity:2 ~alloc:false)
+          else
+            Pccall (Primitive.simple ~name: "caml_bool_compare"
+             ~arity:2
+             ~alloc:false);
         floatcomp = unboxed_compare "caml_float_compare" Unboxed_float;
         stringcomp = Pccall(Primitive.simple ~name:"caml_string_compare" ~arity:2
                 ~alloc:false);
