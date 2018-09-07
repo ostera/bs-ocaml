@@ -55,6 +55,10 @@ let comparisons_table = Lazy.from_fun @@ fun _ ->
       { gencomp = Pccall{prim_name = "caml_equal"; prim_arity = 2; prim_alloc = true;
               prim_native_name = ""; prim_native_float = false};
         intcomp = Pintcomp Ceq;
+        boolcomp = if not !Clflags.bs_only then Pintcomp Ceq
+          else Pccall{prim_name = "caml_bool_equal"; prim_arity = 2;
+                      prim_alloc = false;
+                      prim_native_name = ""; prim_native_float = false}; 
         floatcomp = Pfloatcomp Ceq;
         stringcomp = Pccall{prim_name = "caml_string_equal"; prim_arity = 2;
               prim_alloc = false;
@@ -67,6 +71,10 @@ let comparisons_table = Lazy.from_fun @@ fun _ ->
       { gencomp = Pccall{prim_name = "caml_notequal"; prim_arity = 2; prim_alloc = true;
               prim_native_name = ""; prim_native_float = false};
         intcomp = Pintcomp Cneq;
+        boolcomp = if not !Clflags.bs_only then Pintcomp Cneq
+            else Pccall{prim_name = "caml_bool_notequal"; prim_arity = 2;
+              prim_alloc = false; prim_native_name = "";
+              prim_native_float = false} ; 
         floatcomp = Pfloatcomp Cneq;
         stringcomp = Pccall{prim_name = "caml_string_notequal"; prim_arity = 2;
               prim_alloc = false; prim_native_name = "";
@@ -79,6 +87,10 @@ let comparisons_table = Lazy.from_fun @@ fun _ ->
       { gencomp = Pccall{prim_name = "caml_lessthan"; prim_arity = 2; prim_alloc = true;
               prim_native_name = ""; prim_native_float = false};
         intcomp = Pintcomp Clt;
+        boolcomp = if not !Clflags.bs_only then Pintcomp Clt
+          else Pccall{prim_name = "caml_bool_lessthan"; prim_arity = 2;
+                      prim_alloc = false; prim_native_name = "";
+                      prim_native_float = false};
         floatcomp = Pfloatcomp Clt;
         stringcomp = Pccall{prim_name = "caml_string_lessthan"; prim_arity = 2;
               prim_alloc = false; prim_native_name = "";
@@ -91,6 +103,10 @@ let comparisons_table = Lazy.from_fun @@ fun _ ->
       { gencomp = Pccall{prim_name = "caml_greaterthan"; prim_arity = 2; prim_alloc = true;
               prim_native_name = ""; prim_native_float = false};
         intcomp = Pintcomp Cgt;
+        boolcomp = if not !Clflags.bs_only then Pintcomp Cgt
+          else Pccall{prim_name = "caml_bool_greaterthan"; prim_arity = 2;
+              prim_alloc = false; prim_native_name = "";
+              prim_native_float = false};
         floatcomp = Pfloatcomp Cgt;
         stringcomp = Pccall{prim_name = "caml_string_greaterthan"; prim_arity = 2;
               prim_alloc = false; prim_native_name = "";
@@ -103,6 +119,10 @@ let comparisons_table = Lazy.from_fun @@ fun _ ->
       { gencomp = Pccall{prim_name = "caml_lessequal"; prim_arity = 2; prim_alloc = true;
               prim_native_name = ""; prim_native_float = false};
         intcomp = Pintcomp Cle;
+        boolcomp = if not !Clflags.bs_only then Pintcomp Cle
+          else Pccall{prim_name = "caml_bool_lessequal"; prim_arity = 2;
+                      prim_alloc = false; prim_native_name = "";
+                      prim_native_float = false};
         floatcomp = Pfloatcomp Cle;
         stringcomp = Pccall{prim_name = "caml_string_lessequal"; prim_arity = 2;
               prim_alloc = false; prim_native_name = "";
@@ -116,6 +136,10 @@ let comparisons_table = Lazy.from_fun @@ fun _ ->
               prim_alloc = true;
               prim_native_name = ""; prim_native_float = false};
        intcomp = Pintcomp Cge;
+       boolcomp = if not !Clflags.bs_only then Pintcomp Cge
+         else Pccall{prim_name = "caml_bool_greaterequal"; prim_arity = 2;
+                     prim_alloc = false; prim_native_name = "";
+                     prim_native_float = false};
        floatcomp = Pfloatcomp Cge;
        stringcomp = Pccall{prim_name = "caml_string_greaterequal"; prim_arity = 2;
               prim_alloc = false; prim_native_name = "";
@@ -130,6 +154,16 @@ let comparisons_table = Lazy.from_fun @@ fun _ ->
         intcomp = Pccall{prim_name = "caml_int_compare"; prim_arity = 2;
               prim_alloc = false; prim_native_name = "";
               prim_native_float = false};
+        boolcomp = if not !Clflags.bs_only then
+            Pccall {prim_name = "caml_int_compare";
+             prim_arity = 2;
+             prim_alloc = false; prim_native_name = "";
+             prim_native_float = false}                                               
+          else
+            Pccall {prim_name = "caml_bool_compare";
+             prim_arity = 2;
+             prim_alloc = false; prim_native_name = "";
+             prim_native_float = false};
         floatcomp = Pccall{prim_name = "caml_float_compare"; prim_arity = 2;
               prim_alloc = false; prim_native_name = "";
               prim_native_float = false};
