@@ -421,6 +421,7 @@ let specialize_comparison table env ty =
   | () when is_base_type env ty Predef.path_nativeint -> nativeintcomp
   | () when is_base_type env ty Predef.path_int32     -> int32comp
   | () when is_base_type env ty Predef.path_int64     -> int64comp
+  | () when is_base_type env ty Predef.path_bool      -> table.boolcomp  
   | () -> gencomp
 
 (* The following function computes the greatest lower bound in the
@@ -448,17 +449,19 @@ let glb_array_type t1 t2 =
 (* Specialize a primitive from available type information,
    raise Not_found if primitive is unknown  *)
 
-let specialize_primitive p env ty ~has_constant_constructor =
+let specialize_primitive p env ty (* ~has_constant_constructor *) =
   try
     let table = Hashtbl.find (Lazy.force comparisons_table) p.prim_name in
+#if false then          
     let {gencomp; intcomp; simplify_constant_constructor} =
       table in
     if has_constant_constructor && simplify_constant_constructor then
       intcomp
     else
+#end    
       match is_function_type env ty with
       | Some (lhs,_rhs) -> specialize_comparison table env lhs
-      | None -> gencomp
+      | None -> table.gencomp
   with Not_found ->
     let p = find_primitive p.prim_name in
     (* Try strength reduction based on the type of the argument *)
@@ -508,7 +511,7 @@ let add_used_primitive loc env path =
 
 let transl_primitive loc p env ty path =
   let prim =
-    try specialize_primitive p env ty ~has_constant_constructor:false
+    try specialize_primitive p env ty (* ~has_constant_constructor:false *)
     with Not_found ->
       add_used_primitive loc env path;
       Pccall p
@@ -549,6 +552,14 @@ let transl_primitive loc p env ty path =
 let transl_primitive_application loc prim env ty path args =
   let prim_name = prim.prim_name in
   try
+    (
+      match args with 
+    | [arg1; _] when 
+      is_base_type env arg1.exp_type Predef.path_bool
+      && Hashtbl.mem (Lazy.force comparisons_table) prim_name
+      -> 
+      (Hashtbl.find (Lazy.force comparisons_table) prim_name).boolcomp
+    | _ ->   
     let has_constant_constructor = match args with
         [_; {exp_desc = Texp_construct(_, {cstr_tag = Cstr_constant _}, _)}]
       | [{exp_desc = Texp_construct(_, {cstr_tag = Cstr_constant _}, _)}; _]
@@ -556,7 +567,14 @@ let transl_primitive_application loc prim env ty path args =
       | [{exp_desc = Texp_variant(_, None)}; _] -> true
       | _ -> false
     in
-    specialize_primitive prim env ty ~has_constant_constructor
+    if has_constant_constructor then
+      match Hashtbl.find_opt (Lazy.force comparisons_table) prim_name with 
+      | Some table -> table.intcomp
+      | None -> 
+        specialize_primitive prim env ty (* ~has_constant_constructor*)
+    else         
+        specialize_primitive prim env ty
+  )
   with Not_found ->
     if String.length prim_name > 0 && prim_name.[0] = '%' then
       raise(Error(loc, Unknown_builtin_primitive prim_name));
