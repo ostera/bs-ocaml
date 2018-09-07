@@ -38,104 +38,114 @@ let transl_object =
   ref (fun id s cl -> assert false :
        Ident.t -> string list -> class_expr -> lambda)
 
-(* Translation of primitives *)
 
-let comparisons_table = create_hashtable 11 [
+type specialized = {
+  gencomp : Lambda.primitive;
+  intcomp : Lambda.primitive;
+  boolcomp : Lambda.primitive; 
+  floatcomp : Lambda.primitive;
+  stringcomp : Lambda.primitive;
+  nativeintcomp : Lambda.primitive;
+  int32comp : Lambda.primitive;
+  int64comp : Lambda.primitive;
+  simplify_constant_constructor : bool;
+}
+let comparisons_table = Lazy.from_fun @@ fun _ ->
   "%equal",
-      (Pccall{prim_name = "caml_equal"; prim_arity = 2; prim_alloc = true;
-              prim_native_name = ""; prim_native_float = false},
-       Pintcomp Ceq,
-       Pfloatcomp Ceq,
-       Pccall{prim_name = "caml_string_equal"; prim_arity = 2;
+      { gencomp = Pccall{prim_name = "caml_equal"; prim_arity = 2; prim_alloc = true;
+              prim_native_name = ""; prim_native_float = false};
+        intcomp = Pintcomp Ceq;
+        floatcomp = Pfloatcomp Ceq;
+        stringcomp = Pccall{prim_name = "caml_string_equal"; prim_arity = 2;
               prim_alloc = false;
-              prim_native_name = ""; prim_native_float = false},
-       Pbintcomp(Pnativeint, Ceq),
-       Pbintcomp(Pint32, Ceq),
-       Pbintcomp(Pint64, Ceq),
-       true);
+              prim_native_name = ""; prim_native_float = false};
+        nativeintcomp = Pbintcomp(Pnativeint, Ceq);
+        int32comp = Pbintcomp(Pint32, Ceq);
+        int64comp = Pbintcomp(Pint64, Ceq);
+        simplify_constant_constructor = true};
   "%notequal",
-      (Pccall{prim_name = "caml_notequal"; prim_arity = 2; prim_alloc = true;
-              prim_native_name = ""; prim_native_float = false},
-       Pintcomp Cneq,
-       Pfloatcomp Cneq,
-       Pccall{prim_name = "caml_string_notequal"; prim_arity = 2;
+      { gencomp = Pccall{prim_name = "caml_notequal"; prim_arity = 2; prim_alloc = true;
+              prim_native_name = ""; prim_native_float = false};
+        intcomp = Pintcomp Cneq;
+        floatcomp = Pfloatcomp Cneq;
+        stringcomp = Pccall{prim_name = "caml_string_notequal"; prim_arity = 2;
               prim_alloc = false; prim_native_name = "";
-              prim_native_float = false},
-       Pbintcomp(Pnativeint, Cneq),
-       Pbintcomp(Pint32, Cneq),
-       Pbintcomp(Pint64, Cneq),
-       true);
+              prim_native_float = false};
+        nativeintcomp = Pbintcomp(Pnativeint, Cneq);
+        int32comp = Pbintcomp(Pint32, Cneq);
+        int64comp = Pbintcomp(Pint64, Cneq);
+        simplify_constant_constructor = true};
   "%lessthan",
-      (Pccall{prim_name = "caml_lessthan"; prim_arity = 2; prim_alloc = true;
-              prim_native_name = ""; prim_native_float = false},
-       Pintcomp Clt,
-       Pfloatcomp Clt,
-       Pccall{prim_name = "caml_string_lessthan"; prim_arity = 2;
+      { gencomp = Pccall{prim_name = "caml_lessthan"; prim_arity = 2; prim_alloc = true;
+              prim_native_name = ""; prim_native_float = false};
+        intcomp = Pintcomp Clt;
+        floatcomp = Pfloatcomp Clt;
+        stringcomp = Pccall{prim_name = "caml_string_lessthan"; prim_arity = 2;
               prim_alloc = false; prim_native_name = "";
-              prim_native_float = false},
-       Pbintcomp(Pnativeint, Clt),
-       Pbintcomp(Pint32, Clt),
-       Pbintcomp(Pint64, Clt),
-       false);
+              prim_native_float = false};
+        nativeintcomp = Pbintcomp(Pnativeint, Clt);
+        int32comp = Pbintcomp(Pint32, Clt);
+        int64comp = Pbintcomp(Pint64, Clt);
+        simplify_constant_constructor = false};
   "%greaterthan",
-      (Pccall{prim_name = "caml_greaterthan"; prim_arity = 2; prim_alloc = true;
-              prim_native_name = ""; prim_native_float = false},
-       Pintcomp Cgt,
-       Pfloatcomp Cgt,
-       Pccall{prim_name = "caml_string_greaterthan"; prim_arity = 2;
+      { gencomp = Pccall{prim_name = "caml_greaterthan"; prim_arity = 2; prim_alloc = true;
+              prim_native_name = ""; prim_native_float = false};
+        intcomp = Pintcomp Cgt;
+        floatcomp = Pfloatcomp Cgt;
+        stringcomp = Pccall{prim_name = "caml_string_greaterthan"; prim_arity = 2;
               prim_alloc = false; prim_native_name = "";
-              prim_native_float = false},
-       Pbintcomp(Pnativeint, Cgt),
-       Pbintcomp(Pint32, Cgt),
-       Pbintcomp(Pint64, Cgt),
-       false);
+              prim_native_float = false};
+        nativeintcomp = Pbintcomp(Pnativeint, Cgt);
+        int32comp = Pbintcomp(Pint32, Cgt);
+        int64comp = Pbintcomp(Pint64, Cgt);
+        simplify_constant_constructor = false};
   "%lessequal",
-      (Pccall{prim_name = "caml_lessequal"; prim_arity = 2; prim_alloc = true;
-              prim_native_name = ""; prim_native_float = false},
-       Pintcomp Cle,
-       Pfloatcomp Cle,
-       Pccall{prim_name = "caml_string_lessequal"; prim_arity = 2;
+      { gencomp = Pccall{prim_name = "caml_lessequal"; prim_arity = 2; prim_alloc = true;
+              prim_native_name = ""; prim_native_float = false};
+        intcomp = Pintcomp Cle;
+        floatcomp = Pfloatcomp Cle;
+        stringcomp = Pccall{prim_name = "caml_string_lessequal"; prim_arity = 2;
               prim_alloc = false; prim_native_name = "";
-              prim_native_float = false},
-       Pbintcomp(Pnativeint, Cle),
-       Pbintcomp(Pint32, Cle),
-       Pbintcomp(Pint64, Cle),
-       false);
+              prim_native_float = false};
+        nativeintcomp = Pbintcomp(Pnativeint, Cle);
+        int32comp = Pbintcomp(Pint32, Cle);
+        int64comp = Pbintcomp(Pint64, Cle);
+        simplify_constant_constructor = false};
   "%greaterequal",
-      (Pccall{prim_name = "caml_greaterequal"; prim_arity = 2;
+      {gencomp = Pccall{prim_name = "caml_greaterequal"; prim_arity = 2;
               prim_alloc = true;
-              prim_native_name = ""; prim_native_float = false},
-       Pintcomp Cge,
-       Pfloatcomp Cge,
-       Pccall{prim_name = "caml_string_greaterequal"; prim_arity = 2;
+              prim_native_name = ""; prim_native_float = false};
+       intcomp = Pintcomp Cge;
+       floatcomp = Pfloatcomp Cge;
+       stringcomp = Pccall{prim_name = "caml_string_greaterequal"; prim_arity = 2;
               prim_alloc = false; prim_native_name = "";
-              prim_native_float = false},
-       Pbintcomp(Pnativeint, Cge),
-       Pbintcomp(Pint32, Cge),
-       Pbintcomp(Pint64, Cge),
-       false);
+              prim_native_float = false};
+       nativeintcomp = Pbintcomp(Pnativeint, Cge);
+       int32comp = Pbintcomp(Pint32, Cge);
+       int64comp = Pbintcomp(Pint64, Cge);
+       simplify_constant_constructor = false};
   "%compare",
-      (Pccall{prim_name = "caml_compare"; prim_arity = 2; prim_alloc = true;
-              prim_native_name = ""; prim_native_float = false},
-       Pccall{prim_name = "caml_int_compare"; prim_arity = 2;
+      { gencomp = Pccall{prim_name = "caml_compare"; prim_arity = 2; prim_alloc = true;
+              prim_native_name = ""; prim_native_float = false};
+        intcomp = Pccall{prim_name = "caml_int_compare"; prim_arity = 2;
               prim_alloc = false; prim_native_name = "";
-              prim_native_float = false},
-       Pccall{prim_name = "caml_float_compare"; prim_arity = 2;
+              prim_native_float = false};
+        floatcomp = Pccall{prim_name = "caml_float_compare"; prim_arity = 2;
               prim_alloc = false; prim_native_name = "";
-              prim_native_float = false},
-       Pccall{prim_name = "caml_string_compare"; prim_arity = 2;
+              prim_native_float = false};
+        stringcomp = Pccall{prim_name = "caml_string_compare"; prim_arity = 2;
               prim_alloc = false; prim_native_name = "";
-              prim_native_float = false},
-       Pccall{prim_name = "caml_nativeint_compare"; prim_arity = 2;
+              prim_native_float = false};
+        nativeintcomp = Pccall{prim_name = "caml_nativeint_compare"; prim_arity = 2;
               prim_alloc = false; prim_native_name = "";
-              prim_native_float = false},
-       Pccall{prim_name = "caml_int32_compare"; prim_arity = 2;
+              prim_native_float = false};
+        int32comp = Pccall{prim_name = "caml_int32_compare"; prim_arity = 2;
               prim_alloc = false; prim_native_name = "";
-              prim_native_float = false},
-       Pccall{prim_name = "caml_int64_compare"; prim_arity = 2;
+              prim_native_float = false};
+        int64comp = Pccall{prim_name = "caml_int64_compare"; prim_arity = 2;
               prim_alloc = false; prim_native_name = "";
-              prim_native_float = false},
-       false)
+              prim_native_float = false};
+       simplify_constant_constructor = false}
 ]
 
 let primitives_table = create_hashtable 57 [
@@ -348,10 +358,10 @@ let find_primitive loc prim_name =
 let transl_prim loc prim args =
   let prim_name = prim.prim_name in
   try
-    let (gencomp, intcomp, floatcomp, stringcomp,
-         nativeintcomp, int32comp, int64comp,
-         simplify_constant_constructor) =
-      Hashtbl.find comparisons_table prim_name in
+    let {gencomp; intcomp; boolcomp; floatcomp; stringcomp;
+         nativeintcomp; int32comp; int64comp;
+         simplify_constant_constructor} =
+      Hashtbl.find (Lazy.force comparisons_table) prim_name in
     begin match args with
       [arg1; {exp_desc = Texp_construct(_, {cstr_tag = Cstr_constant _}, _)}]
       when simplify_constant_constructor ->
@@ -413,8 +423,8 @@ let transl_prim loc prim args =
 let transl_primitive loc p =
   let prim =
     try
-      let (gencomp, _, _, _, _, _, _, _) =
-        Hashtbl.find comparisons_table p.prim_name in
+      let {gencomp; _ } =
+        Hashtbl.find (Lazy.force comparisons_table) p.prim_name in
       gencomp
     with Not_found ->
     try
