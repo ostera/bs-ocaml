@@ -397,7 +397,9 @@ let transl_prim loc prim args =
          simplify_constant_constructor} =
       Hashtbl.find (Lazy.force comparisons_table) prim_name in
     begin match args with
-      [arg1; {exp_desc = Texp_construct(_, {cstr_tag = Cstr_constant _}, _)}]
+    | [arg1 ; _] when has_base_type arg1 Predef.path_bool
+      -> boolcomp
+    | [arg1; {exp_desc = Texp_construct(_, {cstr_tag = Cstr_constant _}, _)}]
       when simplify_constant_constructor ->
         intcomp
     | [{exp_desc = Texp_construct(_, {cstr_tag = Cstr_constant _}, _)}; arg2]
@@ -410,8 +412,9 @@ let transl_prim loc prim args =
       when simplify_constant_constructor ->
         intcomp
     | [arg1; arg2] when has_base_type arg1 Predef.path_int
-                     || has_base_type arg1 Predef.path_char ->
-        intcomp
+                     || has_base_type arg1 Predef.path_char
+                     || not (Typeopt.maybe_pointer arg1)->
+        intcomp (* option does not belong to this type, it can be pointer due to [Some] *)
     | [arg1; arg2] when has_base_type arg1 Predef.path_float ->
         floatcomp
     | [arg1; arg2] when has_base_type arg1 Predef.path_string ->
