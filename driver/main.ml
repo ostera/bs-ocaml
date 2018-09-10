@@ -52,6 +52,9 @@ module Options = Main_args.Make_bytecomp_options (struct
   let _intf_suffix s = Config.interface_suffix := s
   let _keep_docs = set keep_docs
   let _no_keep_docs = unset keep_docs
+#if true then 
+  let _bs_d_only = set bs_only
+#end
   let _keep_locs = set keep_locs
   let _no_keep_locs = unset keep_locs
   let _labels = unset classic
@@ -149,6 +152,9 @@ let main () =
         exit 2
       end
     end;
+#if true then     
+    if not !Clflags.bs_only then (
+#end      
     readenv ppf Before_link;
     if
       List.length (List.filter (fun x -> !x)
@@ -196,6 +202,9 @@ let main () =
       Bytelink.link ppf (get_objfiles ~with_ocamlparam:true) target;
       Warnings.check_fatal ();
     end;
+#if true then     
+    )
+#end
   with x ->
     Location.report_exception ppf x;
     exit 2
