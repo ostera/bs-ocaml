@@ -729,7 +729,7 @@ let rec push_defaults loc bindings cases partial =
 let event_before exp lam = match lam with
 | Lstaticraise (_,_) -> lam
 | _ ->
-  if !Clflags.record_event_when_debug && !Clflags.debug && not !Clflags.native_code
+  if !Clflags.record_event_when_debug && !Clflags.debug && not !Clflags.bs_only
   then Levent(lam, {lev_loc = exp.exp_loc;
                     lev_kind = Lev_before;
                     lev_repr = None;
@@ -737,7 +737,7 @@ let event_before exp lam = match lam with
   else lam
 
 let event_after exp lam =
-  if !Clflags.record_event_when_debug && !Clflags.debug && not !Clflags.native_code
+  if !Clflags.record_event_when_debug && !Clflags.debug && not !Clflags.bs_only
   then Levent(lam, {lev_loc = exp.exp_loc;
                     lev_kind = Lev_after exp.exp_type;
                     lev_repr = None;
@@ -745,7 +745,7 @@ let event_after exp lam =
   else lam
 
 let event_function exp lam =
-  if !Clflags.record_event_when_debug && !Clflags.debug && not !Clflags.native_code then
+  if !Clflags.record_event_when_debug && !Clflags.debug && not !Clflags.bs_only then
     let repr = Some (ref 0) in
     let (info, body) = lam repr in
     (info,
@@ -1151,6 +1151,10 @@ and transl_exp0 e =
              (Lvar cpy))
   | Texp_letmodule(id, loc, modl, body) ->
       let defining_expr =
+#if true then        
+        if !Clflags.bs_only then !transl_module Tcoerce_none None modl
+        else
+#end        
         Levent (!transl_module Tcoerce_none None modl, {
           lev_loc = loc.loc;
           lev_kind = Lev_module_definition id;
