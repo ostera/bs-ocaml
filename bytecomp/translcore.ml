@@ -975,7 +975,9 @@ and transl_exp0 e =
           Lconst(Const_pointer (n,
           match lid.txt with
           | Longident.Lident ("false"|"true") -> Pt_builtin_boolean
-          | Longident.Lident "None" when Datarepr.constructor_has_optional_shape cstr
+          | Longident.Ldot (Longident.Lident "*predef*", "None")
+          | Longident.Lident "None"
+             when Datarepr.constructor_has_optional_shape cstr
             -> Pt_shape_none
           | _ -> (Lambda.Pt_constructor cstr.cstr_name)        
           ))
