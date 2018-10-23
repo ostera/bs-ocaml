@@ -3084,6 +3084,11 @@ let for_let loc param pat body =
       let k = Typeopt.value_kind pat.pat_env pat.pat_type in
       Llet(Strict, k, id, param, body)
   | _ ->
+#if true then   
+      (* Turn off such optimization to reduce diff in the beginning*)
+      if !Clflags.bs_only then simple_for_let loc param pat body 
+      else
+#end      
       let opt = ref false in
       let nraise = next_raise_count () in
       let catch_ids = pat_bound_idents pat in
