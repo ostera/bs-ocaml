@@ -637,7 +637,8 @@ let transl_primitive_application loc prim env ty path args =
     in
     if has_constant_constructor then
       match Hashtbl.find_opt (Lazy.force comparisons_table) prim_name with 
-      | Some table -> table.intcomp
+      | Some table when table.simplify_constant_constructor -> table.intcomp
+      | Some _
       | None -> 
         specialize_primitive prim env ty (* ~has_constant_constructor*)
     else         
