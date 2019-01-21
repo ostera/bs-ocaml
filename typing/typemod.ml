@@ -1777,7 +1777,7 @@ let () =
 
 (* Typecheck an implementation file *)
 
-let type_implementation_more sourcefile outputprefix modulename initial_env ast =
+let type_implementation_more ?check_exists sourcefile outputprefix modulename initial_env ast =
   Cmt_format.clear ();
   try
   Typecore.reset_delayed_checks ();
@@ -1832,7 +1832,7 @@ let type_implementation_more sourcefile outputprefix modulename initial_env ast 
       if not !Clflags.dont_write_files then begin
         let deprecated = Builtin_attributes.deprecated_of_str ast in
         let cmi =
-          Env.save_signature ~deprecated
+          Env.save_signature ?check_exists ~deprecated
             simple_sg modulename (outputprefix ^ ".cmi")
         in
         Cmt_format.save_cmt  (outputprefix ^ ".cmt") modulename

@@ -2156,7 +2156,7 @@ let is_imported_opaque s =
 
 (* Save a signature to a file *)
 
-let save_signature_with_imports ~deprecated sg modname filename imports =
+let save_signature_with_imports ?check_exists ~deprecated sg modname filename imports =
   (*prerr_endline filename;
   List.iter (fun (name, crc) -> prerr_endline name) imports;*)
   Btype.cleanup_abbrev ();
@@ -2178,9 +2178,13 @@ let save_signature_with_imports ~deprecated sg modname filename imports =
       cmi_flags = flags;
     } in
     let crc =
+#if false then      
       output_to_file_via_temporary (* see MPR#7472, MPR#4991 *)
          ~mode: [Open_binary] filename
          (fun temp_filename oc -> output_cmi temp_filename oc cmi) in
+#else
+      create_cmi ?check_exists filename cmi in
+#end
     (* Enter signature in persistent table so that imported_unit()
        will also return its crc *)
     let comps =
@@ -2201,8 +2205,8 @@ let save_signature_with_imports ~deprecated sg modname filename imports =
     remove_file filename;
     raise exn
 
-let save_signature ~deprecated sg modname filename =
-  save_signature_with_imports ~deprecated sg modname filename (imports())
+let save_signature ?check_exists ~deprecated sg modname filename =
+  save_signature_with_imports ?check_exists ~deprecated sg modname filename (imports())
 
 (* Folding on environments *)
 
