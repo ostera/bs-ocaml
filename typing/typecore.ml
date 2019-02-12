@@ -5145,6 +5145,10 @@ let report_error env ppf = function
   | Illegal_class_expr ->
       fprintf ppf "This kind of recursive class expression is not allowed"
 
+#if true then
+let super_report_error_no_wrap_printing_env = report_error
+#end
+
 let report_error env ppf err =
   wrap_printing_env env (fun () -> report_error env ppf err)
 
