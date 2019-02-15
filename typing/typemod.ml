@@ -2037,6 +2037,10 @@ let report_error ppf = function
         "This is an alias for module %a, which is missing"
         path p
 
+#if true then
+let super_report_error_no_wrap_printing_env = report_error
+#end
+
 let report_error env ppf err =
   Printtyp.wrap_printing_env env (fun () -> report_error ppf err)
 
