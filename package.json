@@ -5,9 +5,10 @@
   "esy": {
     "build": [
       "./configure -no-cfi -prefix $cur__install",
-      "make -j world.opt",
-      "make install",
-      "make clean"
+      "make -j world.opt"
+    ],
+    "install": [
+      "make install"
     ],
     "buildsInSource": true,
     "exportedEnv": {
