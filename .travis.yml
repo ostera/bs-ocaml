@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 #**************************************************************************
 #*                                                                        *
 #*                                 OCaml                                  *
@@ -15,8 +14,14 @@
 #**************************************************************************
 
 sudo: false
+
 git:
   submodules: false
+
+language: node_js
+node_js:
+  - "10.13"
+
 matrix:
   include:
 
@@ -41,9 +46,11 @@ matrix:
     allow_failures:
     - env: CI_KIND=tests
 
-    # Esy build
-  - language: node
-    script: esy install && esy build
+    # Esy builds
+  - os: osx
+    env: ESY_BUILD=YES ESY__CACHE=/home/travis/.esy
+  - os: linux
+    env: ESY_BUILD=YES ESY__CACHE=/home/travis/.esy
 
 addons:
   apt:
@@ -53,3 +60,19 @@ addons:
 notifications:
   email:
     - ocaml-ci-notifications@inria.fr
+
+cache:
+  directories:
+  - $HOME/travis/.esy
+  - $HOME/travis/.nvm
+  - ./_build/default
+
+install:
+  - "if [[ $ESY_BUILD ]]; npm --globall install esy@next"
+
+script: """
+  if [[ $ESY_BUILD ]];
+  then esy install && esy build;
+  else ./.travis-ci.sh;
+  fi
+  """
