@@ -412,3 +412,10 @@ _ocamltest
 /bin/
 lib/ocaml/
 man/
+/lib/
+
+_esy
+_build
+*.byte
+*.native
+*.install
