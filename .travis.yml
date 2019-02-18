@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 #**************************************************************************
 #*                                                                        *
 #*                                 OCaml                                  *
@@ -14,13 +15,15 @@
 #**************************************************************************
 
 sudo: false
-language: c
 git:
   submodules: false
-script: bash -ex .travis-ci.sh
 matrix:
   include:
-  - env: CI_KIND=build XARCH=i386
+
+    # Default build
+  - language: c
+    script: bash -ex .travis-ci.sh
+    env: CI_KIND=build XARCH=i386
     addons:
       apt:
         packages:
@@ -30,12 +33,18 @@ matrix:
         - binutils-dev:i386
         - libx11-dev:i386
         - libc6-dev:i386
-  - env: CI_KIND=build XARCH=x64
-  - env: CI_KIND=build XARCH=x64 CONFIG_ARG=-flambda OCAMLRUNPARAM=b,v=0
-  - env: CI_KIND=changes
-  - env: CI_KIND=tests
-  allow_failures:
-  - env: CI_KIND=tests
+    env: CI_KIND=build XARCH=x64
+    env: CI_KIND=build XARCH=x64 CONFIG_ARG=-flambda OCAMLRUNPARAM=b,v=0
+    env: CI_KIND=changes
+    env: CI_KIND=tests
+
+    allow_failures:
+    - env: CI_KIND=tests
+
+    # Esy build
+  - language: node
+    script: esy install && esy build
+
 addons:
   apt:
     packages:
