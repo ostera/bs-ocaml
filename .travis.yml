@@ -68,7 +68,7 @@ cache:
   - ./_build/default
 
 install:
-  - "if [[ $ESY_BUILD ]]; npm --globall install esy@next"
+  - "if [[ $ESY_BUILD ]]; then npm --globall install esy@next; fi"
 
 script: """
   if [[ $ESY_BUILD ]];
