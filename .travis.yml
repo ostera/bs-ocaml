@@ -1,5 +1,12 @@
-language: c
-script: bash -ex .travis-ci.sh
-sudo: enabled
-env:
-   - XARCH=i386
+matrix:
+  include:
+    # Default build
+  - language: c
+    script: bash -ex .travis-ci.sh
+    sudo: enabled
+    env:
+       - XARCH=i386
+
+    # Esy build
+  - language: node
+    script: esy install && esy build
