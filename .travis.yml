@@ -23,7 +23,7 @@ cache:
   - ./_build/default
   
 install:
-  - "if [[ $ESY_BUILD ]]; npm --globall install esy@0.5.0"
+  - "if [[ $ESY_BUILD ]]; then npm --globall install esy@0.5.0; fi"
 
 script: """
   if [[ $ESY_BUILD ]];
