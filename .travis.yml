@@ -1,12 +1,33 @@
+language: node_js
+node_js:
+  - "10.13"0"
+
 matrix:
   include:
     # Default build
   - language: c
-    script: bash -ex .travis-ci.sh
     sudo: enabled
     env:
        - XARCH=i386
 
-    # Esy build
-  - language: node
-    script: esy install && esy build
+    # Esy builds
+  - os: osx
+    env: ESY_BUILD=YES ESY__CACHE=/home/travis/.esy
+  - os: linux
+    env: ESY_BUILD=YES ESY__CACHE=/home/travis/.esy
+
+cache:
+  directories:
+  - $HOME/travis/.esy
+  - $HOME/travis/.nvm
+  - ./_build/default
+  
+install:
+  - "if [[ $ESY_BUILD ]]; npm --globall install esy@0.5.0"
+
+script: """
+  if [[ $ESY_BUILD ]];
+  then esy install && esy build;
+  else ./.travis-ci.sh;
+  fi
+  """
