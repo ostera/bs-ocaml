@@ -67,12 +67,6 @@ cache:
   - $HOME/travis/.nvm
   - ./_build/default
 
-install:
-  - "if [[ $ESY_BUILD ]]; then npm --globall install esy@next; fi"
+install: ./.ci/install.sh
 
-script: """
-  if [[ $ESY_BUILD ]];
-  then esy install && esy build;
-  else ./.travis-ci.sh;
-  fi
-  """
+script: travis_wait 20 ./.ci/build.sh
