@@ -28,15 +28,15 @@ build_with_make() {
 # Build the project relying on Esy
 #
 build_with_esy() {
-  ESY=$(npm bin)/esy
-  ${ESY} install
-  ${ESY} build
+  ESY=$(npm bin --global)/esy
+  ${ESY} install --verbose
+  ${ESY} build --verbose
 }
 
 if [[ ${ESY_BUILD} ]]; then
   echo "Found esy build..."
-  build_with_esy()
+  build_with_esy
 else
   echo "Found c build..."
-  build_with_make()
+  build_with_make
 fi
