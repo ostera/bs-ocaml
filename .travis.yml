@@ -69,4 +69,4 @@ cache:
 
 install: ./.ci/install.sh
 
-script: travis_wait 20 ./.ci/build.sh
+script: ./.ci/build.sh
